@@ -1,0 +1,7 @@
+{
+  "futebol":   { "label": "Futebol",              "icon": "⚽", "color": "#4ade80" },
+  "politica":  { "label": "Política",             "icon": "🏛️", "color": "#818cf8" },
+  "ia":        { "label": "Inteligência Artificial", "icon": "🤖", "color": "#a78bfa" },
+  "design":    { "label": "Design Gráfico",       "icon": "🎨", "color": "#f472b6" },
+  "marketing": { "label": "Marketing",            "icon": "📣", "color": "#fbbf24" }
+}

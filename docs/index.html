@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DS Intelligence | Futebol, política, IA, design e marketing</title>
+  <meta name="description" content="Notícias do Brasil sobre futebol, política, inteligência artificial, design gráfico e marketing, com resumos por IA. Uso pessoal.">
+  <meta name="theme-color" content="#08080d">
+  <meta name="robots" content="noindex, nofollow">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https: data:; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <link rel="manifest" href="manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DS News">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Onest:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="assets/css/main.css?v=4">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%237c84f0'/><text y='22' x='5' font-size='18' font-family='sans-serif' font-weight='900' fill='white'>D</text></svg>">
+</head>
+<body>
+
+<div class="layout" id="app">
+
+  <!-- Fundo escuro do menu (mobile). Precisa ficar DENTRO do .layout, senão cobre o próprio menu. -->
+  <div id="sidebarOverlay" data-action="close-sidebar"></div>
+
+  <!-- ══ HEADER ══════════════════════════════════════════════ -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-mark">DS</div>
+      <span class="logo-text">DS <span>Intelligence</span></span>
+    </div>
+
+    <div class="header-search">
+      <svg class="search-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input type="text" id="headerSearchInput" data-action="open-search" placeholder="Buscar notícias, temas, pessoas..." aria-label="Buscar notícias" readonly>
+      <span class="search-shortcut" id="searchShortcut">Ctrl K</span>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn-icon-header" data-action="open-search" id="btnSearchMobile" aria-label="Buscar" type="button">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </button>
+      <button class="btn-mobile-menu" data-action="open-sidebar" id="btnMobileMenu" aria-label="Abrir menu" aria-controls="sidebar" aria-expanded="false" type="button">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <div class="header-dot" title="Sistema ativo"></div>
+      <button class="btn-refresh" id="btnRefresh" data-action="refresh" type="button">
+        <svg class="refresh-icon" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+          <path d="M21 3v5h-5"/>
+          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+          <path d="M3 21v-5h5"/>
+        </svg>
+        Atualizar
+      </button>
+    </div>
+  </header>
+
+  <!-- ══ SIDEBAR ══════════════════════════════════════════════ -->
+  <aside class="sidebar" id="sidebar" aria-label="Menu de navegação">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Navegação</div>
+      <nav id="mainNav">
+        <button type="button" class="nav-item active" data-action="category" data-value="all">
+          <span class="nav-icon">📰</span> Todas as notícias
+          <span class="nav-badge" id="badge-all">0</span>
+        </button>
+        <button type="button" class="nav-item" data-action="category" data-value="favorites">
+          <span class="nav-icon">⭐</span> Favoritos
+          <span class="nav-badge" id="badge-favorites">0</span>
+        </button>
+        <button type="button" class="nav-item" data-action="category" data-value="history">
+          <span class="nav-icon">🕐</span> Histórico
+          <span class="nav-badge" id="badge-history">0</span>
+        </button>
+      </nav>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Editorias</div>
+      <nav id="categoryNav"><!-- gerado pelo app.js --></nav>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Última atualização</div>
+      <div class="sidebar-status">
+        <div id="lastUpdated" class="sidebar-updated">—</div>
+        <div class="sidebar-note">Atualiza a cada ~30 minutos</div>
+        <div class="sources-status" id="sourcesStatus">Verificando fontes…</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══ MAIN ═════════════════════════════════════════════════ -->
+  <main class="main">
+
+    <div class="hero">
+      <h1 class="hero-greeting" id="heroGreeting">Olá!</h1>
+      <div class="hero-sub">
+        <span>Futebol, política, IA, design e marketing, só de fontes brasileiras</span>
+        <span class="hero-date" id="heroDate"></span>
+      </div>
+      <div class="stats-row" id="statsRow"><!-- gerado pelo app.js --></div>
+    </div>
+
+    <div class="category-tabs" id="categoryTabs" role="tablist" aria-label="Editorias"><!-- gerado pelo app.js --></div>
+
+    <div class="filters-bar" id="filtersBar">
+      <button type="button" class="filter-btn active" data-action="filter" data-value="all">Tudo</button>
+      <button type="button" class="filter-btn" data-action="filter" data-value="today">Hoje</button>
+      <button type="button" class="filter-btn" data-action="filter" data-value="24h">Últimas 24h</button>
+      <div class="filter-sep"></div>
+      <button type="button" class="filter-btn" data-action="filter" data-value="urgent">🚨 Urgentes</button>
+      <button type="button" class="filter-btn" data-action="filter" data-value="high">🔴 Destaques</button>
+    </div>
+
+    <div class="content" id="mainContent" aria-live="polite"></div>
+
+    <footer class="site-footer">
+      Resumos gerados por IA a partir do título e do trecho publicados pelas fontes. Sempre confira a matéria original. Uso pessoal.
+    </footer>
+  </main>
+</div>
+
+<!-- ══ SEARCH OVERLAY ════════════════════════════════════════ -->
+<div class="search-overlay" id="searchOverlay" role="dialog" aria-modal="true" aria-label="Buscar notícias">
+  <div class="search-backdrop" id="searchBackdrop" data-action="close-search"></div>
+  <div class="search-panel">
+    <div class="search-input-wrap">
+      <svg width="16" height="16" fill="none" stroke="var(--text-3)" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input type="text" id="searchInput" placeholder="Buscar notícias, temas, pessoas..." autocomplete="off" aria-label="Termo de busca">
+      <button type="button" class="search-esc" data-action="close-search">Esc</button>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+
+<!-- ══ TOAST ════════════════════════════════════════════════ -->
+<div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
+
+<script src="assets/js/config.js?v=4"></script>
+<script src="assets/js/api.js?v=4"></script>
+<script src="assets/js/favorites.js?v=4"></script>
+<script src="assets/js/app.js?v=4"></script>
+<script src="assets/js/pwa.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "ds-news-pessoal",
+  "version": "4.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Portal de notícias pessoal: futebol, política, IA, design e marketing. Atualiza via GitHub Actions.",
+  "scripts": {
+    "atualizar": "node scripts/atualizar.mjs",
+    "site": "node test/servidor.mjs",
+    "test": "node test/pipeline.test.mjs"
+  },
+  "engines": { "node": ">=20" }
+}

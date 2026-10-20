@@ -1,0 +1,36 @@
+[
+  { "id": "trivela",        "name": "Trivela",              "url": "https://trivela.com.br/feed/",                              "category": "futebol",   "verificada": true },
+  { "id": "gazetaesportiva","name": "Gazeta Esportiva",     "url": "https://www.gazetaesportiva.com/feed/",                     "category": "futebol",   "filtro": "futebol", "verificada": true },
+  { "id": "torcedores",     "name": "Torcedores",           "url": "https://www.torcedores.com/feed",                           "category": "futebol",   "filtro": "futebol", "verificada": true },
+  { "id": "metropoles-esp", "name": "Metrópoles",           "url": "https://www.metropoles.com/esportes/feed",                  "category": "futebol",   "filtro": "futebol", "verificada": true },
+  { "id": "ab-esportes",    "name": "Agência Brasil",       "url": "https://agenciabrasil.ebc.com.br/rss/esportes/feed.xml",    "category": "futebol",   "filtro": "futebol", "verificada": true },
+
+  { "id": "ab-politica",    "name": "Agência Brasil",       "url": "https://agenciabrasil.ebc.com.br/rss/politica/feed.xml",    "category": "politica",  "verificada": true },
+  { "id": "camara",         "name": "Agência Câmara",       "url": "https://www.camara.leg.br/noticias/rss/ultimas-noticias",   "category": "politica",  "verificada": true },
+  { "id": "senado",         "name": "Agência Senado",       "url": "https://www12.senado.leg.br/noticias/rss",                  "category": "politica",  "verificada": true },
+  { "id": "carta-politica", "name": "CartaCapital",         "url": "https://www.cartacapital.com.br/politica/feed/",            "category": "politica",  "verificada": true },
+  { "id": "poder360",       "name": "Poder360",             "url": "https://www.poder360.com.br/feed/",                         "category": "politica",  "filtro": "politica", "verificada": true },
+  { "id": "brasildefato",   "name": "Brasil de Fato",       "url": "https://www.brasildefato.com.br/feed/",                     "category": "politica",  "filtro": "politica", "verificada": true },
+  { "id": "gazeta-brasil",  "name": "Gazeta do Povo",       "url": "https://www.gazetadopovo.com.br/feed/rss/brasil.xml",       "category": "politica",  "filtro": "politica", "verificada": true },
+  { "id": "cnnbrasil",      "name": "CNN Brasil",           "url": "https://www.cnnbrasil.com.br/feed/",                        "category": "geral",     "verificada": true },
+
+  { "id": "tecnoblog",      "name": "Tecnoblog",            "url": "https://tecnoblog.net/feed/",                               "category": "ia",        "filtro": "ia", "verificada": true },
+  { "id": "canaltech",      "name": "Canaltech",            "url": "https://canaltech.com.br/rss/",                             "category": "ia",        "filtro": "ia", "verificada": true },
+  { "id": "olhardigital",   "name": "Olhar Digital",        "url": "https://olhardigital.com.br/feed/",                         "category": "ia",        "filtro": "ia", "verificada": true },
+  { "id": "mittechreview",  "name": "MIT Technology Review Brasil", "url": "https://mittechreview.com.br/feed/",                "category": "ia",        "filtro": "ia", "verificada": true },
+  { "id": "mundoconectado", "name": "Mundo Conectado",      "url": "https://mundoconectado.com.br/feed",                        "category": "ia",        "filtro": "ia", "verificada": true },
+  { "id": "tecmundo",       "name": "Tecmundo",             "url": "https://www.tecmundo.com.br/rss",                           "category": "ia",        "filtro": "ia", "verificada": false },
+  { "id": "nucleo",         "name": "Núcleo Jornalismo",    "url": "https://nucleo.jor.br/feed",                                "category": "ia",        "filtro": "ia", "verificada": false },
+  { "id": "exame-ia",       "name": "Exame",                "url": "https://exame.com/inteligencia-artificial/feed/",           "category": "ia",        "verificada": false },
+
+  { "id": "designerd",      "name": "Designerd",            "url": "https://designerd.com.br/feed/",                            "category": "design",    "verificada": true },
+  { "id": "zupi",           "name": "Zupi",                 "url": "https://zupi.com.br/feed/",                                 "category": "design",    "verificada": false },
+  { "id": "b9",             "name": "Brainstorm9",          "url": "https://www.b9.com.br/feed/",                               "category": "geral",     "verificada": false },
+
+  { "id": "meioemensagem",  "name": "Meio & Mensagem",      "url": "https://www.meioemensagem.com.br/feed",                     "category": "marketing", "verificada": true },
+  { "id": "propmark",       "name": "Propmark",             "url": "https://propmark.com.br/feed/",                             "category": "marketing", "verificada": false },
+  { "id": "adnews",         "name": "Adnews",               "url": "https://adnews.com.br/feed/",                               "category": "marketing", "verificada": false },
+  { "id": "mundodomarketing","name": "Mundo do Marketing",  "url": "https://mundodomarketing.com.br/feed",                      "category": "marketing", "verificada": false },
+  { "id": "rockcontent",    "name": "Rock Content",         "url": "https://rockcontent.com/br/blog/feed/",                     "category": "marketing", "verificada": false },
+  { "id": "neilpatel",      "name": "Neil Patel Brasil",    "url": "https://neilpatel.com/br/blog/feed/",                       "category": "marketing", "verificada": false }
+]
