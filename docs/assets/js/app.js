@@ -78,9 +78,9 @@ function formatDateTime(iso) {
 
 function getGreeting() {
   const h = new Date().getHours();
-  if (h < 12) return 'Bom dia! ☀️';
-  if (h < 18) return 'Boa tarde! 🌤️';
-  return 'Boa noite! 🌙';
+  if (h < 12) return 'Bom dia';
+  if (h < 18) return 'Boa tarde';
+  return 'Boa noite';
 }
 
 function categoryOf(key) {
@@ -104,22 +104,18 @@ function showToast(msg, type = 'default') {
 // ── Peças de HTML ────────────────────────────────────────────
 function renderSkeletons(count = 6) {
   return `<div class="news-grid">${Array(count).fill(`
-    <div class="card-skeleton">
-      <div class="card-skeleton-img skeleton"></div>
-      <div class="card-skeleton-body">
-        <div class="card-skeleton-tag skeleton"></div>
-        <div class="card-skeleton-title skeleton"></div>
-        <div class="card-skeleton-title-2 skeleton" style="margin-top:4px"></div>
-        <div class="card-skeleton-text skeleton" style="margin-top:8px"></div>
-        <div class="card-skeleton-text-2 skeleton"></div>
-      </div>
+    <div class="item item-skeleton">
+      <div class="skeleton sk-meta"></div>
+      <div class="skeleton sk-title"></div>
+      <div class="skeleton sk-title sk-short"></div>
+      <div class="skeleton sk-text"></div>
     </div>`).join('')}</div>`;
 }
 
 function badgeHtml(importance) {
   const info = IMPORTANCE[importance];
   if (!info) return '';
-  return `<span class="badge ${info.cls}">${info.emoji} ${escapeHtml(info.label)}</span>`;
+  return `<span class="badge ${info.cls}">${escapeHtml(info.label)}</span>`;
 }
 
 function aiBlockHtml(item) {
@@ -134,19 +130,15 @@ function aiBlockHtml(item) {
 
   return `
     <button type="button" class="card-expand-btn" data-action="toggle-ai" data-id="${id}" aria-expanded="false" aria-controls="ai-${id}">
-      <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-      <span>Ver resumo por IA</span>
+      <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      <span>Resumo por IA</span>
     </button>
     <div class="card-ai" id="ai-${id}">
-      <div class="card-ai-label">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-        Resumo gerado por IA
-      </div>
       <div class="card-ai-content">${summary}${points}</div>
     </div>`;
 }
 
-function renderCard(item, delay = 0) {
+function renderCard(item) {
   const cat = categoryOf(item.category);
   const id = escapeHtml(item.id);
   const link = safeUrl(item.link);
@@ -158,74 +150,56 @@ function renderCard(item, delay = 0) {
     ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" data-action="read" data-id="${id}">${escapeHtml(item.title)}</a>`
     : escapeHtml(item.title);
 
-  const readBtn = link
-    ? `<a class="card-btn card-btn-primary" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" data-action="read" data-id="${id}">
-         <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
-         Ler na fonte
-       </a>`
-    : '<span class="card-btn card-btn-primary" style="pointer-events:none;opacity:.6">Sem link</span>';
-
   return `
-    <article class="card${isRead ? ' read' : ''}" id="card-${id}" style="animation-delay:${delay}s">
-      <div class="card-image">
-        ${image ? `<img class="card-img" src="${escapeHtml(image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
-        <div class="card-image-placeholder" style="${image ? 'display:none' : ''}">${cat.icon}</div>
-        <div class="card-badges">${badgeHtml(item.importance)}</div>
-      </div>
-      <div class="card-body">
-        <div class="card-meta">
-          <span class="card-category">
-            <span class="cat-dot" style="background:${escapeHtml(cat.color)}"></span>
-            <span style="color:${escapeHtml(cat.color)}">${cat.icon} ${escapeHtml(cat.label)}</span>
-          </span>
-          <time class="card-date" datetime="${escapeHtml(item.date)}">${escapeHtml(formatRelativeDate(item.date))}</time>
+    <article class="item${isRead ? ' read' : ''}" id="card-${id}" style="--c:${escapeHtml(cat.color)}">
+      <div class="item-body">
+        <div class="item-meta">
+          <span class="item-cat">${escapeHtml(cat.label)}</span>
+          <span class="item-src">${escapeHtml(item.source)}</span>
+          <time class="item-date" datetime="${escapeHtml(item.date)}">${escapeHtml(formatRelativeDate(item.date))}</time>
+          ${badgeHtml(item.importance)}
         </div>
-        <h2 class="card-title">${titleHtml}</h2>
-        ${item.summary ? `<p class="card-summary">${escapeHtml(item.summary)}</p>` : ''}
+        <h2 class="item-title">${titleHtml}</h2>
+        ${item.summary ? `<p class="item-summary">${escapeHtml(item.summary)}</p>` : ''}
         ${aiBlockHtml(item)}
-        <div class="card-source">${escapeHtml(item.source)}</div>
       </div>
-      <div class="card-footer">
-        ${readBtn}
-        <button type="button" class="card-btn card-btn-icon ${isFav ? 'active' : ''}" id="fav-${id}" data-action="favorite" data-id="${id}"
-                aria-pressed="${isFav}" aria-label="${isFav ? 'Remover dos favoritos' : 'Salvar nos favoritos'}" title="${isFav ? 'Remover dos favoritos' : 'Salvar nos favoritos'}">
-          <svg width="12" height="12" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
-        </button>
-        <button type="button" class="card-btn card-btn-icon" data-action="share" data-id="${id}" aria-label="Compartilhar" title="Compartilhar">
-          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
-        </button>
+      <div class="item-side">
+        ${image ? `<a class="item-thumb" href="${escapeHtml(link || '#')}" target="_blank" rel="noopener noreferrer" tabindex="-1" aria-hidden="true" data-action="read" data-id="${id}"><img class="item-img" src="${escapeHtml(image)}" alt="" loading="lazy" referrerpolicy="no-referrer"></a>` : ''}
+        <div class="item-actions">
+          <button type="button" class="icon-btn ${isFav ? 'active' : ''}" id="fav-${id}" data-action="favorite" data-id="${id}"
+                  aria-pressed="${isFav}" aria-label="${isFav ? 'Remover dos favoritos' : 'Salvar nos favoritos'}" title="${isFav ? 'Remover dos favoritos' : 'Salvar nos favoritos'}">
+            <svg width="15" height="15" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+          </button>
+          <button type="button" class="icon-btn" data-action="share" data-id="${id}" aria-label="Compartilhar" title="Compartilhar">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
+          </button>
+        </div>
       </div>
     </article>`;
 }
 
-function renderTrend(item, index) {
+function renderTrends(trends) {
   return `
-    <div class="trend-card" style="animation-delay:${index * 0.05}s">
-      <div class="trend-rank">${String(index + 1).padStart(2, '0')}</div>
-      <div class="trend-icon">${escapeHtml(item.icon)}</div>
-      <div class="trend-body">
-        <div class="trend-title">${escapeHtml(item.title)}</div>
-        <div class="trend-sub">${escapeHtml(item.description)}</div>
-      </div>
+    <div class="trends">
+      <span class="trends-label">Em alta</span>
+      ${trends.map(t => `<button type="button" class="trend-chip" data-action="trend" data-q="${escapeHtml(t.title)}">${escapeHtml(t.title)}<small>${escapeHtml(t.count)}</small></button>`).join('')}
     </div>`;
 }
 
-function sectionHtml(title, icon, count, bodyHtml, moreCategory = null) {
+function sectionHtml(title, color, count, bodyHtml, moreCategory = null, hideCat = false) {
   return `
-    <section>
+    <section class="news-section">
       <div class="section-header">
-        <h3 class="section-title">${escapeHtml(icon)} ${escapeHtml(title)} <span class="section-count">${count} ${count === 1 ? 'item' : 'itens'}</span></h3>
-        <div class="section-line"></div>
-        ${moreCategory ? `<button type="button" class="section-more" data-action="category" data-value="${escapeHtml(moreCategory)}">Ver todas →</button>` : ''}
+        <h3 class="section-title"><span class="sec-dot" style="background:${escapeHtml(color)}"></span>${escapeHtml(title)} <span class="section-count">${count}</span></h3>
+        ${moreCategory ? `<button type="button" class="section-more" data-action="category" data-value="${escapeHtml(moreCategory)}">Ver todas</button>` : ''}
       </div>
-      <div class="news-grid">${bodyHtml}</div>
+      <div class="news-grid${hideCat ? ' hide-cat' : ''}">${bodyHtml}</div>
     </section>`;
 }
 
 function emptyStateHtml(icon, title, sub, actionHtml = '') {
   return `
     <div class="empty-state">
-      <div class="empty-state-icon">${icon}</div>
       <div class="empty-state-title">${escapeHtml(title)}</div>
       <div class="empty-state-sub">${escapeHtml(sub)}</div>
       ${actionHtml}
@@ -234,7 +208,7 @@ function emptyStateHtml(icon, title, sub, actionHtml = '') {
 
 const loadMoreHtml = `
   <div class="load-more-wrap">
-    <button type="button" class="card-btn card-btn-primary load-more-btn" data-action="load-more">Carregar mais notícias</button>
+    <button type="button" class="load-more-btn" data-action="load-more">Carregar mais</button>
   </div>`;
 
 // ── Render principal ─────────────────────────────────────────
@@ -246,8 +220,8 @@ function render() {
 
   if (State.error && !(view === 'home' && State.home) && !(view === 'list' && State.list.items.length)) {
     content.innerHTML = emptyStateHtml(
-      '📡', 'Não foi possível carregar as notícias', State.error,
-      '<button type="button" class="card-btn card-btn-primary retry-btn" data-action="retry">Tentar de novo</button>'
+      '', 'Não foi possível carregar as notícias', State.error,
+      '<button type="button" class="retry-btn" data-action="retry">Tentar de novo</button>'
     );
     return;
   }
@@ -257,18 +231,17 @@ function render() {
     remember(items);
     if (!items.length) {
       content.innerHTML = view === 'favorites'
-        ? emptyStateHtml('⭐', 'Nenhum favorito ainda', 'Toque na estrela de qualquer notícia para guardá-la aqui.')
-        : emptyStateHtml('🕐', 'Histórico vazio', 'As notícias que você abrir aparecerão aqui.');
+        ? emptyStateHtml('', 'Nenhum favorito ainda', 'Toque na estrela de uma notícia para guardá-la aqui.')
+        : emptyStateHtml('', 'Histórico vazio', 'As notícias que você abrir aparecem aqui.');
       return;
     }
     const clearBtn = view === 'history'
       ? '<button type="button" class="section-more" data-action="clear-history">Limpar histórico</button>' : '';
     content.innerHTML = `
       <div class="section-header">
-        <h3 class="section-title">${view === 'favorites' ? '⭐ Favoritos' : '🕐 Histórico'} <span class="section-count">${items.length} ${items.length === 1 ? 'item' : 'itens'}</span></h3>
-        <div class="section-line"></div>${clearBtn}
+        <h3 class="section-title">${view === 'favorites' ? 'Favoritos' : 'Histórico'} <span class="section-count">${items.length}</span></h3>${clearBtn}
       </div>
-      <div class="news-grid">${items.map((n, i) => renderCard(n, Math.min(i, 12) * 0.03)).join('')}</div>`;
+      <div class="news-grid">${items.map(n => renderCard(n)).join('')}</div>`;
     return;
   }
 
@@ -286,21 +259,19 @@ function renderHome(content) {
   if (!h) { content.innerHTML = renderSkeletons(6); return; }
 
   const parts = [];
+  if (h.trends?.length) parts.push(renderTrends(h.trends));
   if (h.breaking?.length) {
-    parts.push(sectionHtml('Urgente', '🚨', h.breaking.length, h.breaking.map((n, i) => renderCard(n, i * 0.04)).join('')));
+    parts.push(sectionHtml('Urgente', '#d92d20', h.breaking.length, h.breaking.map(n => renderCard(n)).join('')));
   }
   for (const s of h.sections || []) {
     const cat = CATEGORIES[s.category];
     if (!cat) continue;
-    parts.push(sectionHtml(cat.label, cat.icon, s.total, s.items.map((n, i) => renderCard(n, i * 0.04)).join(''),
-      s.total > s.items.length ? s.category : null));
-  }
-  if (h.trends?.length) {
-    parts.push(sectionHtml('Assuntos do momento', '🔥', h.trends.length, h.trends.map(renderTrend).join('')));
+    parts.push(sectionHtml(cat.label, cat.color, s.total, s.items.map(n => renderCard(n)).join(''),
+      s.total > s.items.length ? s.category : null, true));
   }
 
   content.innerHTML = parts.join('') || emptyStateHtml(
-    '📡', 'Ainda não há notícias', 'O portal atualiza sozinho a cada 30 minutos. Tente novamente em instantes.');
+    '', 'Ainda não há notícias', 'O portal atualiza sozinho a cada 30 minutos. Tente novamente em instantes.');
 }
 
 function renderList(content) {
@@ -308,7 +279,7 @@ function renderList(content) {
   const cat = categoryOf(State.category);
 
   if (!items.length) {
-    content.innerHTML = emptyStateHtml('📭', 'Nenhuma notícia encontrada',
+    content.innerHTML = emptyStateHtml('', 'Nenhuma notícia encontrada',
       'Tente outro filtro ou volte mais tarde.');
     return;
   }
@@ -317,11 +288,10 @@ function renderList(content) {
   const title = State.category === 'all' ? 'Todas as notícias' : cat.label;
   content.innerHTML = `
     <div class="section-header">
-      <h3 class="section-title">${escapeHtml(cat.icon)} ${escapeHtml(title)}${filterLabel ? ` · ${escapeHtml(filterLabel)}` : ''}
-        <span class="section-count">${total} ${total === 1 ? 'item' : 'itens'}</span></h3>
-      <div class="section-line"></div>
+      <h3 class="section-title"><span class="sec-dot" style="background:${escapeHtml(cat.color)}"></span>${escapeHtml(title)}${filterLabel ? ` (${escapeHtml(filterLabel)})` : ''}
+        <span class="section-count">${total}</span></h3>
     </div>
-    <div class="news-grid">${items.map((n, i) => renderCard(n, Math.min(i % CONFIG.PAGE_SIZE, 12) * 0.03)).join('')}</div>
+    <div class="news-grid${State.category !== 'all' ? ' hide-cat' : ''}">${items.map(n => renderCard(n)).join('')}</div>
     ${hasMore ? loadMoreHtml : ''}`;
 }
 
@@ -331,24 +301,15 @@ function buildChrome() {
 
   $('#categoryNav').innerHTML = editorias.map(([key, c]) => `
     <button type="button" class="nav-item" data-action="category" data-value="${key}">
-      <span class="nav-icon">${c.icon}</span> ${escapeHtml(c.label)}
+      <span class="nav-icon" style="background:${escapeHtml(c.color)}"></span> ${escapeHtml(c.label)}
       <span class="nav-badge" id="badge-${key}">0</span>
     </button>`).join('');
 
   $('#categoryTabs').innerHTML =
     `<button type="button" class="tab active" role="tab" data-action="category" data-value="all">Todas</button>` +
     editorias.map(([key, c]) =>
-      `<button type="button" class="tab" role="tab" data-action="category" data-value="${key}">${c.icon} ${escapeHtml(c.label)}</button>`
+      `<button type="button" class="tab" role="tab" data-action="category" data-value="${key}">${escapeHtml(c.label)}</button>`
     ).join('');
-
-  const chips = editorias.map(([key]) => key);
-  $('#statsRow').innerHTML =
-    `<button type="button" class="stat-chip" data-action="today"><span class="dot" style="background:var(--accent);box-shadow:0 0 6px var(--accent)"></span><strong id="todayCount">0</strong> notícias hoje</button>` +
-    chips.map(key => `
-      <button type="button" class="stat-chip" data-action="category" data-value="${key}">
-        <span class="dot" style="background:${CATEGORIES[key].color}"></span>
-        <strong id="chip-${key}">0</strong> ${escapeHtml(CATEGORIES[key].label)}
-      </button>`).join('');
 }
 
 function updateChrome() {
@@ -579,7 +540,19 @@ function toggleAI(btn, id) {
   btn.classList.toggle('open', open);
   btn.setAttribute('aria-expanded', String(open));
   const label = btn.querySelector('span');
-  if (label) label.textContent = open ? 'Fechar resumo' : 'Ver resumo por IA';
+  if (label) label.textContent = open ? 'Ocultar resumo' : 'Resumo por IA';
+}
+
+// ── Tema (claro/escuro) ──────────────────────────────────────
+function toggleTheme() {
+  const root = document.documentElement;
+  const dark = root.dataset.theme
+    ? root.dataset.theme === 'dark'
+    : window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const next = dark ? 'light' : 'dark';
+  root.dataset.theme = next;
+  try { localStorage.setItem('ds_theme', next); } catch { /* ignore */ }
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next === 'dark' ? '#0d0e11' : '#fbfbfc');
 }
 
 // ── Busca ────────────────────────────────────────────────────
@@ -599,7 +572,7 @@ function closeSearch() {
 
 function renderSearchHint() {
   $('#searchResults').innerHTML = `
-    <div class="search-empty"><div class="search-empty-icon">🔍</div>Digite para buscar em todas as editorias</div>`;
+    <div class="search-empty">Digite para buscar em todas as editorias</div>`;
 }
 
 let searchTimer;
@@ -637,7 +610,7 @@ async function performSearch(q) {
     const link = safeUrl(n.link);
     return `
       <a class="search-result-item" href="${escapeHtml(link || '#')}" ${link ? 'target="_blank" rel="noopener noreferrer"' : ''} data-action="read" data-id="${escapeHtml(n.id)}">
-        <div class="search-result-icon">${cat.icon}</div>
+        <div class="search-result-icon"><span class="nav-icon" style="background:${escapeHtml(cat.color)}"></span></div>
         <div class="search-result-body">
           <div class="search-result-title">${escapeHtml(n.title)}</div>
           <div class="search-result-meta" style="color:${escapeHtml(cat.color)}">${escapeHtml(cat.label)} · ${escapeHtml(n.source)} · ${escapeHtml(formatRelativeDate(n.date))}</div>
@@ -663,6 +636,8 @@ function handleClick(e) {
     case 'share':         shareItem(id); break;
     case 'toggle-ai':     toggleAI(el, id); break;
     case 'read':          markRead(id); if (State.searchOpen) closeSearch(); return;   // deixa o link abrir
+    case 'trend':         openSearch(); $('#searchInput').value = el.dataset.q; performSearch(el.dataset.q); break;
+    case 'theme':         toggleTheme(); break;
     case 'open-search':   openSearch(); break;
     case 'close-search':  closeSearch(); break;
     case 'open-sidebar':  openSidebar(); break;
@@ -732,10 +707,8 @@ async function init() {
   // Imagem quebrada: mostra o ícone da editoria no lugar.
   document.addEventListener('error', e => {
     const img = e.target;
-    if (img.tagName === 'IMG' && img.classList.contains('card-img')) {
-      img.style.display = 'none';
-      const placeholder = img.nextElementSibling;
-      if (placeholder) placeholder.style.display = 'flex';
+    if (img.tagName === 'IMG' && img.classList.contains('item-img')) {
+      img.closest('.item-thumb')?.remove();
     }
   }, true);
 

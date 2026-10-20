@@ -1,7 +1,7 @@
 /* DS Intelligence: service worker. Páginas e dados: rede primeiro (sempre a versão nova), cache como reserva. */
-const VERSION = 'dsnews-v4';
+const VERSION = 'dsnews-v6';
 const CORE = ['./', 'index.html', 'manifest.json', 'assets/css/main.css', 'assets/js/config.js', 'assets/js/api.js',
-  'assets/js/favorites.js', 'assets/js/app.js', 'assets/js/pwa.js', 'icons/icon-192.png'];
+  'assets/js/favorites.js', 'assets/js/app.js', 'assets/js/pwa.js', 'assets/js/theme.js', 'icons/icon-192.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
