@@ -1,5 +1,5 @@
 /* DS Intelligence: service worker. Páginas e dados: rede primeiro (sempre a versão nova), cache como reserva. */
-const VERSION = 'dsnews-v6';
+const VERSION = 'dsnews-v7';
 const CORE = ['./', 'index.html', 'manifest.json', 'assets/css/main.css', 'assets/js/config.js', 'assets/js/api.js',
   'assets/js/favorites.js', 'assets/js/app.js', 'assets/js/pwa.js', 'assets/js/theme.js', 'icons/icon-192.png'];
 
