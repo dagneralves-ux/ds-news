@@ -22,11 +22,18 @@ for (let i = 0; i < 8; i++) for (const c of cats) {
   const t = titles[c][i % 5] + (i >= 5 ? ` (parte ${i})` : '');
   itens.push({
     id: `id${n++}`, title: t, link: 'https://exemplo.com.br/' + n, date: new Date(now - (n * 37 + 3) * 60000).toISOString(),
-    summary: long, image: '', category: c, source: ['Trivela', 'Agência Câmara', 'Tecnoblog', 'Designerd', 'Meio & Mensagem'][cats.indexOf(c)],
+    summary: long, image: n % 7 === 0 ? 'https://exemplo.invalid/foto.jpg' : '', category: c, source: ['Trivela', 'Agência Câmara', 'Tecnoblog', 'Designerd', 'Meio & Mensagem'][cats.indexOf(c)],
     sourceId: 'x', importance: t.startsWith('URGENTE') ? 'urgent' : (i % 4 === 0 ? 'high' : 'medium'),
     aiSummary: i % 2 ? { summary: 'Resumo curto gerado por IA sobre a notícia.', points: ['Primeiro fato', 'Segundo fato'] } : null,
   });
 }
+// mesma notícia em outras fontes (demonstra o agrupamento)
+['Outra Fonte A', 'Outra Fonte B'].forEach((src, k) => {
+  cats.slice(0, 4).forEach((c, j) => {
+    const base = itens.find(n => n.category === c && n.title === titles[c][0]);
+    if (base) itens.push({ ...base, id: `dup${k}${j}`, link: 'https://exemplo.com.br/dup' + k + j, source: src, title: base.title + ' hoje', date: new Date(new Date(base.date).getTime() + (25 + k * 70) * 60000).toISOString(), aiSummary: null });
+  });
+});
 mkdirSync(join(dest, 'data'), { recursive: true });
 writeFileSync(join(dest, 'data', 'news.json'), JSON.stringify({ atualizadoEm: new Date(now - 600000).toISOString(), categorias: CATEGORIES, tendencias: generateTrends(itens), itens }));
 writeFileSync(join(dest, 'data', 'status.json'), JSON.stringify({ verificadoEm: new Date().toISOString(), fontes: [

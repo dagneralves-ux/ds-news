@@ -1,5 +1,5 @@
 /**
- * DS Intelligence: leitor de feeds RSS/Atom
+ * TabNews: leitor de feeds RSS/Atom
  *
  * - IDs estáveis via SHA-256 da URL canônica (sem colisão entre notícias do mesmo domínio)
  * - Entidades HTML completas (&#8211;, &eacute;...) e encoding ISO-8859-1

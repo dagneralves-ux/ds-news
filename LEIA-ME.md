@@ -1,4 +1,4 @@
-# DS Intelligence (pessoal)
+# TabNews (pessoal)
 
 Portal de notícias só para você: **Futebol, Política, Inteligência Artificial, Design Gráfico e Marketing**, apenas com fontes brasileiras. Funciona no PC e no celular (instala como app), com resumos por IA.
 
@@ -61,3 +61,7 @@ node test/servidor.mjs           # abre o site em http://localhost:8790
 - Entrou o foco nos seus 5 assuntos e só fontes do Brasil.
 - Resumos por IA em lote (uma chamada para até 6 notícias), bem dentro da cota grátis.
 - Favoritos e histórico continuam, guardados no próprio navegador.
+
+
+## Favoritos e lidas compartilhados (opcional)
+Por padrão, favoritos e lidas ficam só no navegador de cada pessoa. Para valerem entre aparelhos e entre o grupo, crie um projeto grátis no Supabase, rode o arquivo `supabase-setup.sql` e preencha `SYNC` em `docs/assets/js/config.js` (`url`, `key` e um nome de `group`, igual para todos). Sem isso, o site continua funcionando normalmente.

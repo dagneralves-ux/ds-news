@@ -1,5 +1,5 @@
 /**
- * DS Intelligence — Favorites & History Manager
+ * TabNews — Favorites & History Manager
  * Armazena dados no localStorage com prefixo de versão.
  */
 const Store = {
@@ -35,12 +35,14 @@ const Store = {
       favs.unshift({ ...newsItem, savedAt: new Date().toISOString() });
       if (favs.length > 300) favs.splice(300);
       this._set('favorites', favs);
+      if (typeof Sync !== 'undefined' && Sync.on) Sync.push('fav', newsItem);
     }
   },
 
   removeFavorite(id) {
     const favs = this.getFavorites().filter(f => f.id !== id);
     this._set('favorites', favs);
+    if (typeof Sync !== 'undefined' && Sync.on) Sync.remove('fav', id);
   },
 
   isFavorite(id) {
@@ -67,6 +69,7 @@ const Store = {
       // Manter apenas os últimos 200 items
       if (hist.length > 200) hist.splice(200);
       this._set('history', hist);
+      if (typeof Sync !== 'undefined' && Sync.on) Sync.push('read', newsItem);
     }
   },
 
@@ -76,6 +79,7 @@ const Store = {
 
   clearHistory() {
     this._set('history', []);
+    if (typeof Sync !== 'undefined' && Sync.on) Sync.clear('read');
   },
 
   // ── Counts ──────────────────────────────────────────────────

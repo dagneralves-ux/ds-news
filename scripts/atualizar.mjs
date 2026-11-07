@@ -1,5 +1,5 @@
 /**
- * DS Intelligence (pessoal): atualiza as notícias.
+ * TabNews (pessoal): atualiza as notícias.
  *
  *   node scripts/atualizar.mjs            → busca os feeds, resume com IA e grava docs/data/news.json
  *

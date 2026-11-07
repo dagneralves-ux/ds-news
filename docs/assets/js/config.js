@@ -1,5 +1,5 @@
 /**
- * DS Intelligence (pessoal): configuração do front-end.
+ * TabNews (pessoal): configuração do front-end.
  * As editorias vêm do arquivo data/news.json (geradas a partir de config/categorias.json).
  */
 const CONFIG = {
@@ -7,6 +7,10 @@ const CONFIG = {
 
   // Mudou o formato dos dados: favoritos e histórico de versões antigas ficam de lado.
   CACHE_VERSION: 'v4',
+
+  // Favoritos e lidas compartilhados entre os aparelhos e as pessoas do grupo (Supabase).
+  // Deixe url e key vazios para guardar só neste navegador. Tabela: supabase-setup.sql
+  SYNC: { url: '', key: '', group: 'tabnews' },
 
   // Atualização automática da página inicial (5 minutos, só com a aba aberta)
   AUTO_REFRESH: 5 * 60 * 1000,

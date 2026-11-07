@@ -1,5 +1,5 @@
 /**
- * DS Intelligence (pessoal): aplicação principal (v4)
+ * TabNews (pessoal): aplicação principal (v4)
  *
  * - Os dados vêm de data/news.json (ver api.js, que responde às rotas /api/* no navegador)
  * - Todo conteúdo dinâmico passa por escapeHtml (o HTML nunca recebe texto cru)
@@ -138,6 +138,27 @@ function aiBlockHtml(item) {
     </div>`;
 }
 
+function gapLabel(fromIso, toIso) {
+  const m = Math.max(0, Math.round((new Date(toIso) - new Date(fromIso)) / 60000));
+  if (m < 1) return 'ao mesmo tempo';
+  if (m < 60) return `+${m} min`;
+  const h = Math.round(m / 60);
+  return h < 48 ? `+${h} h` : `+${Math.round(h / 24)} d`;
+}
+
+/** Outras fontes que publicaram a mesma notícia (o cartão é o de quem deu primeiro). */
+function alsoHtml(item) {
+  if (!item.also?.length) return '';
+  const chips = item.also.map(a => {
+    const link = safeUrl(a.link);
+    const label = `${escapeHtml(a.source)} <small>${escapeHtml(gapLabel(item.date, a.date))}</small>`;
+    return link
+      ? `<a class="also-chip" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">${label}</a>`
+      : `<span class="also-chip">${label}</span>`;
+  }).join('');
+  return `<div class="item-also"><span class="also-first">${escapeHtml(item.source)} deu primeiro</span><span class="also-label">Também em</span>${chips}</div>`;
+}
+
 function renderCard(item) {
   const cat = categoryOf(item.category);
   const id = escapeHtml(item.id);
@@ -147,7 +168,7 @@ function renderCard(item) {
   const isRead = Store.isRead(item.id);
 
   const titleHtml = link
-    ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" data-action="read" data-id="${id}">${escapeHtml(item.title)}</a>`
+    ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" data-action="open-panel" data-id="${id}">${escapeHtml(item.title)}</a>`
     : escapeHtml(item.title);
 
   return `
@@ -161,10 +182,11 @@ function renderCard(item) {
         </div>
         <h2 class="item-title">${titleHtml}</h2>
         ${item.summary ? `<p class="item-summary">${escapeHtml(item.summary)}</p>` : ''}
+        ${alsoHtml(item)}
         ${aiBlockHtml(item)}
       </div>
       <div class="item-side">
-        ${image ? `<a class="item-thumb" href="${escapeHtml(link || '#')}" target="_blank" rel="noopener noreferrer" tabindex="-1" aria-hidden="true" data-action="read" data-id="${id}"><img class="item-img" src="${escapeHtml(image)}" alt="" loading="lazy" referrerpolicy="no-referrer"></a>` : ''}
+        ${image ? `<a class="item-thumb" href="${escapeHtml(link || '#')}" target="_blank" rel="noopener noreferrer" tabindex="-1" aria-hidden="true" data-action="open-panel" data-id="${id}"><img class="item-img" src="${escapeHtml(image)}" alt="" loading="lazy" referrerpolicy="no-referrer"></a>` : ''}
         <div class="item-actions">
           <button type="button" class="icon-btn ${isFav ? 'active' : ''}" id="fav-${id}" data-action="favorite" data-id="${id}"
                   aria-pressed="${isFav}" aria-label="${isFav ? 'Remover dos favoritos' : 'Salvar nos favoritos'}" title="${isFav ? 'Remover dos favoritos' : 'Salvar nos favoritos'}">
@@ -254,20 +276,78 @@ function render() {
   return renderList(content);
 }
 
+function featuredHtml(list) {
+  if (!list?.length) return '';
+  const [main, ...rest] = list;
+  const cat = categoryOf(main.category);
+  const image = safeImage(main.image);
+  const id = escapeHtml(main.id);
+  const isFav = Store.isFavorite(main.id);
+  const side = rest.map(n => {
+    const c = categoryOf(n.category);
+    return `
+      <button type="button" class="feat-row" data-action="open-panel" data-id="${escapeHtml(n.id)}" style="--c:${escapeHtml(c.color)}">
+        <span class="feat-row-cat"><span class="sec-dot" style="background:${escapeHtml(c.color)}"></span>${escapeHtml(c.label)}</span>
+        <span class="feat-row-title">${escapeHtml(n.title)}</span>
+        <span class="feat-row-meta">${escapeHtml(n.source)} · ${escapeHtml(formatRelativeDate(n.date))}${n.also?.length ? ` · ${n.also.length + 1} fontes` : ''}</span>
+      </button>`;
+  }).join('');
+  return `
+    <section class="featured" aria-label="Destaque do dia">
+      <article class="feat-main" id="card-${id}" style="--c:${escapeHtml(cat.color)}">
+        <div class="feat-media${image ? '' : ' no-img'}" data-icon="${escapeHtml(cat.icon || '')}">
+          ${image ? `<img class="item-img" src="${escapeHtml(image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="feat-media-mark">${escapeHtml(cat.icon || '')}</span>`}
+          <span class="feat-tag">Destaque do dia</span>
+        </div>
+        <div class="feat-body">
+          <div class="item-meta">
+            <span class="item-cat">${escapeHtml(cat.label)}</span>
+            <span class="item-src">${escapeHtml(main.source)}</span>
+            <time class="item-date" datetime="${escapeHtml(main.date)}">${escapeHtml(formatRelativeDate(main.date))}</time>
+            ${badgeHtml(main.importance)}
+          </div>
+          <h2 class="feat-title"><a href="${escapeHtml(safeUrl(main.link) || '#')}" data-action="open-panel" data-id="${id}">${escapeHtml(main.title)}</a></h2>
+          ${main.summary ? `<p class="feat-summary">${escapeHtml(main.summary)}</p>` : ''}
+          ${alsoHtml(main)}
+          <div class="feat-actions">
+            <button type="button" class="btn-primary" data-action="open-panel" data-id="${id}">Ler resumo</button>
+            <button type="button" class="icon-btn ${isFav ? 'active' : ''}" id="fav-${id}" data-action="favorite" data-id="${id}" aria-pressed="${isFav}" aria-label="Favoritar" title="Favoritar">
+              <svg width="17" height="17" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+            </button>
+          </div>
+        </div>
+      </article>
+      <div class="feat-side">${side}</div>
+    </section>`;
+}
+
+function stripHtml(title, color, count, items, category) {
+  const key = escapeHtml(category);
+  return `
+    <section class="news-section strip-section">
+      <div class="section-header">
+        <h3 class="section-title"><span class="sec-dot" style="background:${escapeHtml(color)}"></span>${escapeHtml(title)} <span class="section-count">${count}</span></h3>
+        <div class="strip-nav">
+          <button type="button" class="strip-btn" data-action="strip" data-value="-1" data-id="${key}" aria-label="Anteriores">‹</button>
+          <button type="button" class="strip-btn" data-action="strip" data-value="1" data-id="${key}" aria-label="Próximas">›</button>
+        </div>
+        <button type="button" class="section-more" data-action="category" data-value="${key}">Ver todas</button>
+      </div>
+      <div class="strip hide-cat" id="strip-${key}">${items.map(n => renderCard(n)).join('')}</div>
+    </section>`;
+}
+
 function renderHome(content) {
   const h = State.home;
   if (!h) { content.innerHTML = renderSkeletons(6); return; }
 
   const parts = [];
   if (h.trends?.length) parts.push(renderTrends(h.trends));
-  if (h.breaking?.length) {
-    parts.push(sectionHtml('Urgente', '#d92d20', h.breaking.length, h.breaking.map(n => renderCard(n)).join('')));
-  }
+  parts.push(featuredHtml(h.featured));
   for (const s of h.sections || []) {
     const cat = CATEGORIES[s.category];
     if (!cat) continue;
-    parts.push(sectionHtml(cat.label, cat.color, s.total, s.items.map(n => renderCard(n)).join(''),
-      s.total > s.items.length ? s.category : null, true));
+    parts.push(stripHtml(cat.label, cat.color, s.total, s.items, s.category));
   }
 
   content.innerHTML = parts.join('') || emptyStateHtml(
@@ -338,7 +418,7 @@ function updateChrome() {
   $('#lastUpdated').textContent = lastUpdated ? formatDateTime(lastUpdated) : '—';
 
   const label = { all: null, favorites: 'Favoritos', history: 'Histórico' }[State.category] ?? categoryOf(State.category).label;
-  document.title = label ? `${label} | DS Intelligence` : 'DS Intelligence | Futebol, política, IA, design e marketing';
+  document.title = label ? `${label} | TabNews` : 'TabNews | Futebol, política, IA, design e marketing';
 }
 
 function applyMeta(data) {
@@ -349,6 +429,10 @@ function applyMeta(data) {
     lastUpdated: data.lastUpdated || null,
   };
   updateChrome();
+  const put = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+  put('#statTotal', State.meta.total.toLocaleString('pt-BR'));
+  put('#statToday', State.meta.todayCount.toLocaleString('pt-BR'));
+  put('#statCats', Object.keys(CATEGORIES).filter(k => k !== 'all').length);
 }
 
 // ── Carregamento de dados ────────────────────────────────────
@@ -362,14 +446,14 @@ async function loadHome({ force = false, silent = false } = {}) {
     const data = await API.get('/api/home');
     if (req !== State.reqId) return;
     State.home = data;
-    remember(data.breaking);
     (data.sections || []).forEach(s => remember(s.items));
+    remember(data.featured);
     State.error = null;
     applyMeta(data);
     if (force) showToast('Notícias atualizadas', 'success');
   } catch (e) {
     if (req !== State.reqId) return;
-    console.warn('[DS Intelligence]', e);
+    console.warn('[TabNews]', e);
     if (silent) return;
     if (State.home) showToast('Não foi possível atualizar. Mostrando as últimas notícias carregadas.', 'error');
     else State.error = describeError(e);
@@ -409,7 +493,7 @@ async function loadList({ reset = true, force = false } = {}) {
     if (force) showToast('Notícias atualizadas', 'success');
   } catch (e) {
     if (req !== State.reqId) return;
-    console.warn('[DS Intelligence]', e);
+    console.warn('[TabNews]', e);
     if (reset) State.error = describeError(e);
     else showToast('Não foi possível carregar mais notícias', 'error');
   } finally {
@@ -425,7 +509,7 @@ async function loadMeta() {
   try {
     applyMeta(await API.get('/api/dashboard'));
   } catch (e) {
-    console.warn('[DS Intelligence] contadores indisponíveis', e);
+    console.warn('[TabNews] contadores indisponíveis', e);
   }
 }
 
@@ -517,6 +601,7 @@ function toggleFavorite(id) {
     }
   }
   $('#badge-favorites').textContent = Store.getFavoritesCount();
+  refreshPanelFav();
   showToast(added ? 'Adicionado aos favoritos' : 'Removido dos favoritos', added ? 'success' : 'default');
 }
 
@@ -543,6 +628,81 @@ function toggleAI(btn, id) {
   if (label) label.textContent = open ? 'Ocultar resumo' : 'Resumo por IA';
 }
 
+// ── Painel lateral da notícia ────────────────────────────────
+State.panelId = null;
+
+function panelHtml(item) {
+  const cat = categoryOf(item.category);
+  const id = escapeHtml(item.id);
+  const link = safeUrl(item.link);
+  const image = safeImage(item.image);
+  const isFav = Store.isFavorite(item.id);
+  const ai = item.aiSummary;
+  const points = Array.isArray(ai?.points) && ai.points.length
+    ? '<ul class="panel-points">' + ai.points.map(p => `<li>${escapeHtml(p)}</li>`).join('') + '</ul>' : '';
+  const aiBlock = ai && (ai.summary || points)
+    ? `<div class="panel-ai"><div class="panel-ai-label">Resumo por IA</div>${ai.summary ? `<p>${escapeHtml(ai.summary)}</p>` : ''}${points}</div>` : '';
+  const also = item.also?.length
+    ? `<div class="panel-also"><div class="panel-label">Também publicado em</div>${item.also.map(a => {
+        const l = safeUrl(a.link);
+        return `<a class="panel-also-row" ${l ? `href="${escapeHtml(l)}" target="_blank" rel="noopener noreferrer"` : ''}><span>${escapeHtml(a.source)}</span><small>${escapeHtml(gapLabel(item.date, a.date))} depois</small></a>`;
+      }).join('')}</div>` : '';
+
+  return `
+    <div class="panel-media${image ? '' : ' no-img'}" data-icon="${escapeHtml(cat.icon || '')}" style="--c:${escapeHtml(cat.color)}">
+      ${image ? `<img class="item-img" src="${escapeHtml(image)}" alt="" referrerpolicy="no-referrer">` : `<span class="feat-media-mark">${escapeHtml(cat.icon || '')}</span>`}
+    </div>
+    <div class="panel-body">
+      <div class="item-meta">
+        <span class="item-cat" style="--c:${escapeHtml(cat.color)}">${escapeHtml(cat.label)}</span>
+        <span class="item-src">${escapeHtml(item.source)}</span>
+        <time class="item-date">${escapeHtml(formatDateTime(item.date))}</time>
+        ${badgeHtml(item.importance)}
+      </div>
+      <h2 class="panel-title">${escapeHtml(item.title)}</h2>
+      ${item.also?.length ? `<div class="item-also"><span class="also-first">${escapeHtml(item.source)} deu primeiro</span></div>` : ''}
+      ${item.summary ? `<p class="panel-summary">${escapeHtml(item.summary)}</p>` : ''}
+      ${aiBlock}
+      ${also}
+      <div class="panel-actions">
+        ${link ? `<a class="btn-primary" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" data-action="read" data-id="${id}">Ler matéria original</a>` : ''}
+        <button type="button" class="btn-ghost ${isFav ? 'active' : ''}" id="panel-fav" data-action="favorite" data-id="${id}" aria-pressed="${isFav}">${isFav ? 'Salvo nos favoritos' : 'Salvar nos favoritos'}</button>
+        <button type="button" class="btn-ghost" data-action="share" data-id="${id}">Compartilhar</button>
+      </div>
+      <p class="panel-note">O resumo usa só o título e o trecho publicados pela fonte. Confira a matéria original.</p>
+    </div>`;
+}
+
+function openPanel(id) {
+  const item = findItem(id);
+  if (!item) return;
+  if (State.searchOpen) closeSearch();
+  State.panelId = id;
+  markRead(id);
+  $('#panelContent').innerHTML = panelHtml(item);
+  $('#newsPanel').classList.add('open');
+  $('#panelBackdrop').classList.add('open');
+  $('#newsPanel').setAttribute('aria-hidden', 'false');
+  $('#panelContent').scrollTop = 0;
+  $('#panelClose').focus({ preventScroll: true });
+}
+
+function closePanel() {
+  State.panelId = null;
+  $('#newsPanel').classList.remove('open');
+  $('#panelBackdrop').classList.remove('open');
+  $('#newsPanel').setAttribute('aria-hidden', 'true');
+}
+
+function refreshPanelFav() {
+  const btn = $('#panel-fav');
+  if (!btn || !State.panelId) return;
+  const on = Store.isFavorite(State.panelId);
+  btn.classList.toggle('active', on);
+  btn.setAttribute('aria-pressed', String(on));
+  btn.textContent = on ? 'Salvo nos favoritos' : 'Salvar nos favoritos';
+}
+
 // ── Tema (claro/escuro) ──────────────────────────────────────
 function toggleTheme() {
   const root = document.documentElement;
@@ -552,7 +712,7 @@ function toggleTheme() {
   const next = dark ? 'light' : 'dark';
   root.dataset.theme = next;
   try { localStorage.setItem('ds_theme', next); } catch { /* ignore */ }
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next === 'dark' ? '#0d0e11' : '#fbfbfc');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next === 'dark' ? '#0c3f9e' : '#0b56d6');
 }
 
 // ── Busca ────────────────────────────────────────────────────
@@ -609,7 +769,7 @@ async function performSearch(q) {
     const cat = categoryOf(n.category);
     const link = safeUrl(n.link);
     return `
-      <a class="search-result-item" href="${escapeHtml(link || '#')}" ${link ? 'target="_blank" rel="noopener noreferrer"' : ''} data-action="read" data-id="${escapeHtml(n.id)}">
+      <a class="search-result-item" href="${escapeHtml(link || '#')}" ${link ? 'target="_blank" rel="noopener noreferrer"' : ''} data-action="open-panel" data-id="${escapeHtml(n.id)}">
         <div class="search-result-icon"><span class="nav-icon" style="background:${escapeHtml(cat.color)}"></span></div>
         <div class="search-result-body">
           <div class="search-result-title">${escapeHtml(n.title)}</div>
@@ -620,13 +780,32 @@ async function performSearch(q) {
 }
 
 // ── Eventos (um único ouvinte) ───────────────────────────────
+// ── Modo de exibição: lista ou cards (lembrado neste navegador) ──
+function setView(v) {
+  const mode = v === 'cards' ? 'cards' : 'list';
+  document.documentElement.dataset.view = mode;
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.value === mode));
+  try { localStorage.setItem('tn_view', mode); } catch { /* ignore */ }
+}
+
 function handleClick(e) {
   const el = e.target.closest('[data-action]');
   if (!el) return;
   const { action, value, id } = el.dataset;
 
+  // Ctrl/⌘/Shift/botão do meio no título: deixa abrir a matéria normalmente numa aba
+  if (action === 'open-panel' && el.tagName === 'A' && (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1)) { markRead(id); return; }
+  if (action === 'open-panel') e.preventDefault();
+
   switch (action) {
-    case 'category':      go(value); break;
+    case 'open-panel':    openPanel(id); break;
+    case 'close-panel':   closePanel(); break;
+    case 'strip': {
+      const strip = document.getElementById(`strip-${id}`);
+      strip?.scrollBy({ left: Number(value) * Math.max(280, strip.clientWidth * 0.85), behavior: 'smooth' });
+      break;
+    }
+    case 'category':      closePanel(); go(value); break;
     case 'today':         go('all', { filter: 'today' }); break;
     case 'filter':        setFilter(value); break;
     case 'refresh':       loadCurrent({ force: true }); break;
@@ -638,12 +817,13 @@ function handleClick(e) {
     case 'read':          markRead(id); if (State.searchOpen) closeSearch(); return;   // deixa o link abrir
     case 'trend':         openSearch(); $('#searchInput').value = el.dataset.q; performSearch(el.dataset.q); break;
     case 'theme':         toggleTheme(); break;
+    case 'view':          setView(value); break;
     case 'open-search':   openSearch(); break;
     case 'close-search':  closeSearch(); break;
     case 'open-sidebar':  openSidebar(); break;
     case 'close-sidebar': closeSidebar(); break;
     case 'clear-history':
-      if (confirm('Limpar todo o histórico de leitura?')) {
+      if (confirm(Sync.on ? 'Limpar o histórico de leitura de todo o grupo?' : 'Limpar todo o histórico de leitura?')) {
         Store.clearHistory();
         updateChrome();
         render();
@@ -657,6 +837,7 @@ function handleKeydown(e) {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openSearch(); }
   if (e.key === 'Escape') {
     if (State.searchOpen) closeSearch();
+    else if (State.panelId) closePanel();
     if (State.sidebarOpen) closeSidebar();
   }
 }
@@ -685,12 +866,22 @@ async function loadSources() {
       bad.map(f => `<li>${escapeHtml(f.name)} <small>${escapeHtml(f.erro || '')}</small></li>`).join('')}</ul></details>` : '');
 }
 
+function hideSplash() {
+  const el = $('#splash');
+  if (!el) return;
+  const wait = Math.max(0, 700 - (performance.now() | 0));
+  setTimeout(() => { el.classList.add('hide'); setTimeout(() => el.remove(), 450); }, wait);
+}
+
 // ── Início ───────────────────────────────────────────────────
 async function init() {
   try { await API.load(); } catch (e) { State.error = describeError(e); }
   buildChrome();
 
-  $('#heroGreeting').textContent = getGreeting();
+  let savedView = 'list';
+  try { savedView = localStorage.getItem('tn_view') || 'list'; } catch { /* ignore */ }
+  setView(savedView);
+  $('#heroGreeting').innerHTML = `${getGreeting()}, <em>Dagner.</em>`;
   const small = window.matchMedia('(max-width: 600px)').matches;
   $('#heroDate').textContent = new Date().toLocaleDateString('pt-BR', small
     ? { weekday: 'short', day: '2-digit', month: 'short' }
@@ -709,6 +900,13 @@ async function init() {
     const img = e.target;
     if (img.tagName === 'IMG' && img.classList.contains('item-img')) {
       img.closest('.item-thumb')?.remove();
+      const media = img.closest('.feat-media, .panel-media');
+      if (media) {
+        const icon = media.dataset.icon || '';
+        img.remove();
+        media.classList.add('no-img');
+        if (!media.querySelector('.feat-media-mark')) media.insertAdjacentHTML('afterbegin', `<span class="feat-media-mark">${escapeHtml(icon)}</span>`);
+      }
     }
   }, true);
 
@@ -716,6 +914,13 @@ async function init() {
   updateChrome();
   loadCurrent();
   loadSources();
+
+  if (Sync.on) {
+    const note = $('#syncNote');
+    if (note) note.textContent = 'Favoritos e lidas compartilhados com o grupo';
+    Sync.start(() => { updateChrome(); if (currentView() === 'favorites' || currentView() === 'history') render(); });
+  }
+  hideSplash();
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
