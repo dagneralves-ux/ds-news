@@ -65,3 +65,14 @@ node test/servidor.mjs           # abre o site em http://localhost:8790
 
 ## Favoritos e lidas compartilhados (opcional)
 Por padrão, favoritos e lidas ficam só no navegador de cada pessoa. Para valerem entre aparelhos e entre o grupo, crie um projeto grátis no Supabase, rode o arquivo `supabase-setup.sql` e preencha `SYNC` em `docs/assets/js/config.js` (`url`, `key` e um nome de `group`, igual para todos). Sem isso, o site continua funcionando normalmente.
+
+
+## Interface TabNews 2.0 — Editorial Intelligence
+
+A camada visual foi atualizada sem reconstruir o motor de notícias. A nova interface usa uma identidade editorial com azul-marinho, superfícies neutras, tipografia DM Sans + Newsreader, navegação lateral, destaque principal, tendências, cards de notícias, resumo por IA e tema claro/escuro refinado.
+
+No celular, o menu lateral funciona como gaveta e há uma barra inferior com atalhos para Início, Editorias, Favoritos e Histórico. Os filtros, a busca, o modo lista/cards e os estados de carregamento foram mantidos.
+
+**Frequências:** o robô do GitHub continua coletando notícias aproximadamente a cada 30 minutos. Enquanto a página inicial está aberta, o navegador revalida o arquivo publicado a cada 5 minutos; isso não executa uma nova coleta RSS.
+
+O redesign altera principalmente `docs/index.html`, `docs/assets/css/main.css`, `docs/assets/js/app.js`, o manifesto e a versão do cache do service worker. O pipeline RSS, a classificação, a deduplicação, os resumos por IA, os favoritos e a sincronização não foram substituídos.

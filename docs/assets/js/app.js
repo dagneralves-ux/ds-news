@@ -1,5 +1,5 @@
 /**
- * TabNews (pessoal): aplicação principal (v4)
+ * TabNews (pessoal): aplicação principal (v5 — Editorial Intelligence)
  *
  * - Os dados vêm de data/news.json (ver api.js, que responde às rotas /api/* no navegador)
  * - Todo conteúdo dinâmico passa por escapeHtml (o HTML nunca recebe texto cru)
@@ -39,6 +39,9 @@ const State = {
   reqId: 0,                 // descarta respostas atrasadas quando o usuário troca de tela
   searchOpen: false,
   sidebarOpen: false,
+  searchTrigger: null,
+  panelTrigger: null,
+  sidebarTrigger: null,
   index: new Map(),         // id -> notícia (para favoritar, compartilhar, marcar como lida)
 };
 
@@ -130,8 +133,9 @@ function aiBlockHtml(item) {
 
   return `
     <button type="button" class="card-expand-btn" data-action="toggle-ai" data-id="${id}" aria-expanded="false" aria-controls="ai-${id}">
-      <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-      <span>Resumo por IA</span>
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7z"/><path d="m19 16 .8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg>
+      <span>Ver resumo da IA</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
     </button>
     <div class="card-ai" id="ai-${id}">
       <div class="card-ai-content">${summary}${points}</div>
@@ -202,9 +206,9 @@ function renderCard(item) {
 
 function renderTrends(trends) {
   return `
-    <div class="trends">
-      <span class="trends-label">Em alta</span>
-      ${trends.map(t => `<button type="button" class="trend-chip" data-action="trend" data-q="${escapeHtml(t.title)}">${escapeHtml(t.title)}<small>${escapeHtml(t.count)}</small></button>`).join('')}
+    <div class="trends" aria-label="Assuntos em alta">
+      <span class="trends-label">Assuntos em alta</span>
+      ${trends.map(t => `<button type="button" class="trend-chip" data-action="trend" data-q="${escapeHtml(t.title)}">${escapeHtml(t.title)}<small>${escapeHtml(t.count)} notícias</small></button>`).join('')}
     </div>`;
 }
 
@@ -222,6 +226,7 @@ function sectionHtml(title, color, count, bodyHtml, moreCategory = null, hideCat
 function emptyStateHtml(icon, title, sub, actionHtml = '') {
   return `
     <div class="empty-state">
+      <div class="empty-state-icon" aria-hidden="true">${escapeHtml(icon || '🗞️')}</div>
       <div class="empty-state-title">${escapeHtml(title)}</div>
       <div class="empty-state-sub">${escapeHtml(sub)}</div>
       ${actionHtml}
@@ -238,11 +243,12 @@ function render() {
   const content = $('#mainContent');
   const view = currentView();
 
+  content.setAttribute('aria-busy', String(State.loading));
   $('#filtersBar').hidden = view === 'favorites' || view === 'history';
 
   if (State.error && !(view === 'home' && State.home) && !(view === 'list' && State.list.items.length)) {
     content.innerHTML = emptyStateHtml(
-      '', 'Não foi possível carregar as notícias', State.error,
+      '↻', 'Não foi possível carregar as notícias', State.error,
       '<button type="button" class="retry-btn" data-action="retry">Tentar de novo</button>'
     );
     return;
@@ -253,8 +259,8 @@ function render() {
     remember(items);
     if (!items.length) {
       content.innerHTML = view === 'favorites'
-        ? emptyStateHtml('', 'Nenhum favorito ainda', 'Toque na estrela de uma notícia para guardá-la aqui.')
-        : emptyStateHtml('', 'Histórico vazio', 'As notícias que você abrir aparecem aqui.');
+        ? emptyStateHtml('☆', 'Nenhum favorito ainda', 'Use a estrela em uma notícia para montar sua lista de leitura.')
+        : emptyStateHtml('◷', 'Histórico vazio', 'As notícias que você abrir aparecerão nesta lista.');
       return;
     }
     const clearBtn = view === 'history'
@@ -293,11 +299,11 @@ function featuredHtml(list) {
       </button>`;
   }).join('');
   return `
-    <section class="featured" aria-label="Destaque do dia">
+    <section class="featured" aria-label="Notícia em destaque">
       <article class="feat-main" id="card-${id}" style="--c:${escapeHtml(cat.color)}">
         <div class="feat-media${image ? '' : ' no-img'}" data-icon="${escapeHtml(cat.icon || '')}">
           ${image ? `<img class="item-img" src="${escapeHtml(image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="feat-media-mark">${escapeHtml(cat.icon || '')}</span>`}
-          <span class="feat-tag">Destaque do dia</span>
+          <span class="feat-tag">Em destaque</span>
         </div>
         <div class="feat-body">
           <div class="item-meta">
@@ -351,7 +357,7 @@ function renderHome(content) {
   }
 
   content.innerHTML = parts.join('') || emptyStateHtml(
-    '', 'Ainda não há notícias', 'O portal atualiza sozinho a cada 30 minutos. Tente novamente em instantes.');
+    '🗞️', 'Ainda não há notícias', 'A coleta é atualizada automaticamente. Tente novamente em instantes.');
 }
 
 function renderList(content) {
@@ -359,7 +365,7 @@ function renderList(content) {
   const cat = categoryOf(State.category);
 
   if (!items.length) {
-    content.innerHTML = emptyStateHtml('', 'Nenhuma notícia encontrada',
+    content.innerHTML = emptyStateHtml('⌕', 'Nenhuma notícia encontrada',
       'Tente outro filtro ou volte mais tarde.');
     return;
   }
@@ -380,15 +386,16 @@ function buildChrome() {
   const editorias = Object.entries(CATEGORIES).filter(([key]) => key !== 'all');
 
   $('#categoryNav').innerHTML = editorias.map(([key, c]) => `
-    <button type="button" class="nav-item" data-action="category" data-value="${key}">
-      <span class="nav-icon" style="background:${escapeHtml(c.color)}"></span> ${escapeHtml(c.label)}
-      <span class="nav-badge" id="badge-${key}">0</span>
+    <button type="button" class="nav-item" data-action="category" data-value="${escapeHtml(key)}">
+      <span class="nav-emoji" aria-hidden="true">${escapeHtml(c.icon || '•')}</span>
+      <span class="nav-text">${escapeHtml(c.label)}</span>
+      <span class="nav-badge" id="badge-${escapeHtml(key)}">0</span>
     </button>`).join('');
 
   $('#categoryTabs').innerHTML =
-    `<button type="button" class="tab active" role="tab" data-action="category" data-value="all">Todas</button>` +
+    `<button type="button" class="tab active" role="tab" aria-selected="true" data-action="category" data-value="all">Todas</button>` +
     editorias.map(([key, c]) =>
-      `<button type="button" class="tab" role="tab" data-action="category" data-value="${key}">${escapeHtml(c.label)}</button>`
+      `<button type="button" class="tab" role="tab" aria-selected="false" data-action="category" data-value="${escapeHtml(key)}">${escapeHtml(c.label)}</button>`
     ).join('');
 }
 
@@ -399,6 +406,14 @@ function updateChrome() {
       el.classList.toggle('active', active);
       if (el.classList.contains('tab')) el.setAttribute('aria-selected', String(active));
     }
+  });
+  $$('.mobile-nav-item').forEach(el => {
+    const active = el.dataset.navGroup === 'categories'
+      ? !['all', 'favorites', 'history'].includes(State.category)
+      : el.dataset.value === State.category;
+    el.classList.toggle('active', active);
+    if (active) el.setAttribute('aria-current', 'page');
+    else el.removeAttribute('aria-current');
   });
   $$('.filter-btn').forEach(el => el.classList.toggle('active', el.dataset.value === State.filter));
 
@@ -560,19 +575,28 @@ function setFilter(filter) {
 
 // ── Menu lateral (mobile) ────────────────────────────────────
 function openSidebar() {
+  if (State.sidebarOpen) return;
+  State.sidebarTrigger = document.activeElement;
   State.sidebarOpen = true;
   $('#sidebar').classList.add('mobile-open');
   $('#sidebarOverlay').classList.add('active');
+  $('#sidebarOverlay').setAttribute('aria-hidden', 'false');
   $('#btnMobileMenu').setAttribute('aria-expanded', 'true');
   document.body.style.overflow = 'hidden';
+  $('#mainNav .nav-item')?.focus({ preventScroll: true });
 }
 
 function closeSidebar() {
+  if (!State.sidebarOpen) return;
   State.sidebarOpen = false;
   $('#sidebar').classList.remove('mobile-open');
   $('#sidebarOverlay').classList.remove('active');
+  $('#sidebarOverlay').setAttribute('aria-hidden', 'true');
   $('#btnMobileMenu')?.setAttribute('aria-expanded', 'false');
   document.body.style.overflow = '';
+  const trigger = State.sidebarTrigger;
+  State.sidebarTrigger = null;
+  if (trigger?.isConnected) trigger.focus({ preventScroll: true });
 }
 
 // ── Ações nos cartões ────────────────────────────────────────
@@ -625,7 +649,7 @@ function toggleAI(btn, id) {
   btn.classList.toggle('open', open);
   btn.setAttribute('aria-expanded', String(open));
   const label = btn.querySelector('span');
-  if (label) label.textContent = open ? 'Ocultar resumo' : 'Resumo por IA';
+  if (label) label.textContent = open ? 'Ocultar resumo' : 'Ver resumo da IA';
 }
 
 // ── Painel lateral da notícia ────────────────────────────────
@@ -676,7 +700,9 @@ function panelHtml(item) {
 function openPanel(id) {
   const item = findItem(id);
   if (!item) return;
+  const trigger = document.activeElement;
   if (State.searchOpen) closeSearch();
+  State.panelTrigger = trigger;
   State.panelId = id;
   markRead(id);
   $('#panelContent').innerHTML = panelHtml(item);
@@ -688,10 +714,14 @@ function openPanel(id) {
 }
 
 function closePanel() {
+  if (!State.panelId) return;
   State.panelId = null;
   $('#newsPanel').classList.remove('open');
   $('#panelBackdrop').classList.remove('open');
   $('#newsPanel').setAttribute('aria-hidden', 'true');
+  const trigger = State.panelTrigger;
+  State.panelTrigger = null;
+  if (trigger?.isConnected) trigger.focus({ preventScroll: true });
 }
 
 function refreshPanelFav() {
@@ -712,22 +742,38 @@ function toggleTheme() {
   const next = dark ? 'light' : 'dark';
   root.dataset.theme = next;
   try { localStorage.setItem('ds_theme', next); } catch { /* ignore */ }
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next === 'dark' ? '#0c3f9e' : '#0b56d6');
+  document.querySelectorAll('meta[name="theme-color"]').forEach(meta => {
+    meta.setAttribute('content', next === 'dark' ? '#0d1422' : '#f5f7fb');
+  });
+  const themeButton = $('#btnTheme');
+  if (themeButton) {
+    themeButton.setAttribute('aria-label', next === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro');
+    themeButton.setAttribute('title', next === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro');
+  }
 }
 
 // ── Busca ────────────────────────────────────────────────────
 function openSearch() {
+  if (State.searchOpen) return;
+  if (State.sidebarOpen) closeSidebar();
+  State.searchTrigger = document.activeElement;
   State.searchOpen = true;
   $('#searchOverlay').classList.add('open');
+  $('#searchOverlay').setAttribute('aria-hidden', 'false');
   renderSearchHint();
   setTimeout(() => $('#searchInput')?.focus(), 50);
 }
 
 function closeSearch() {
+  if (!State.searchOpen) return;
   State.searchOpen = false;
   $('#searchOverlay').classList.remove('open');
+  $('#searchOverlay').setAttribute('aria-hidden', 'true');
   const input = $('#searchInput');
   if (input) input.value = '';
+  const trigger = State.searchTrigger;
+  State.searchTrigger = null;
+  if (trigger?.isConnected) trigger.focus({ preventScroll: true });
 }
 
 function renderSearchHint() {
@@ -784,7 +830,11 @@ async function performSearch(q) {
 function setView(v) {
   const mode = v === 'cards' ? 'cards' : 'list';
   document.documentElement.dataset.view = mode;
-  document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.value === mode));
+  document.querySelectorAll('.view-btn').forEach(b => {
+    const active = b.dataset.value === mode;
+    b.classList.toggle('active', active);
+    b.setAttribute('aria-pressed', String(active));
+  });
   try { localStorage.setItem('tn_view', mode); } catch { /* ignore */ }
 }
 
@@ -795,7 +845,7 @@ function handleClick(e) {
 
   // Ctrl/⌘/Shift/botão do meio no título: deixa abrir a matéria normalmente numa aba
   if (action === 'open-panel' && el.tagName === 'A' && (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1)) { markRead(id); return; }
-  if (action === 'open-panel') e.preventDefault();
+  if (action === 'open-panel' || (action === 'category' && el.tagName === 'A')) e.preventDefault();
 
   switch (action) {
     case 'open-panel':    openPanel(id); break;
@@ -835,10 +885,26 @@ function handleClick(e) {
 
 function handleKeydown(e) {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openSearch(); }
+  if (e.target?.id === 'headerSearchInput' && (e.key === 'Enter' || e.key === ' ')) {
+    e.preventDefault();
+    openSearch();
+  }
   if (e.key === 'Escape') {
     if (State.searchOpen) closeSearch();
     else if (State.panelId) closePanel();
     if (State.sidebarOpen) closeSidebar();
+  }
+
+  // Keep keyboard focus inside the active dialog until it is dismissed.
+  if (e.key === 'Tab' && (State.searchOpen || State.panelId)) {
+    const dialog = State.searchOpen ? $('#searchOverlay') : $('#newsPanel');
+    const focusable = [...dialog.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+      .filter(el => el.getClientRects().length > 0);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   }
 }
 
@@ -887,6 +953,11 @@ async function init() {
     ? { weekday: 'short', day: '2-digit', month: 'short' }
     : { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
   $('#searchShortcut').textContent = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K';
+  const initialDark = document.documentElement.dataset.theme
+    ? document.documentElement.dataset.theme === 'dark'
+    : window.matchMedia('(prefers-color-scheme: dark)').matches;
+  $('#btnTheme').setAttribute('aria-label', initialDark ? 'Ativar tema claro' : 'Ativar tema escuro');
+  $('#btnTheme').setAttribute('title', initialDark ? 'Ativar tema claro' : 'Ativar tema escuro');
 
   document.addEventListener('click', handleClick);
   document.addEventListener('keydown', handleKeydown);

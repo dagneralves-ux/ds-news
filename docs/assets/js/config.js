@@ -12,7 +12,7 @@ const CONFIG = {
   // Deixe url e key vazios para guardar só neste navegador. Tabela: supabase-setup.sql
   SYNC: { url: '', key: '', group: 'tabnews' },
 
-  // Atualização automática da página inicial (5 minutos, só com a aba aberta)
+  // Revalidação automática do arquivo na página inicial (5 minutos, só com a aba aberta)
   AUTO_REFRESH: 5 * 60 * 1000,
 };
 
