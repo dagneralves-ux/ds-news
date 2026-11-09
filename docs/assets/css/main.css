@@ -123,18 +123,13 @@ img { max-width: 100%; }
 /* Brand */
 .logo { display: flex; align-items: center; gap: 11px; min-width: 0; }
 .logo-mark {
-  display: grid;
+  display: block;
   flex: 0 0 auto;
-  place-items: center;
-  width: 39px;
-  height: 39px;
-  border: 1px solid rgba(255,255,255,.16);
-  border-radius: 13px;
-  color: #fff;
-  background: linear-gradient(145deg, #4e7df0, #2d56c8);
-  box-shadow: 0 7px 18px rgba(36, 79, 194, .28);
-  font: 800 13px/1 var(--font-body);
-  letter-spacing: -.06em;
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  border-radius: 12px;
+  filter: drop-shadow(0 5px 9px rgba(105, 65, 145, .18));
 }
 .logo-lockup { display: grid; gap: 4px; min-width: 0; }
 .logo-text { color: var(--ink); font: 800 19px/1 var(--font-body); letter-spacing: -.055em; }
@@ -888,7 +883,7 @@ a.panel-also-row:hover { color: var(--accent); }
 }
 .splash.hide { opacity: 0; visibility: hidden; }
 .splash-logo { display: flex; align-items: center; gap: 13px; animation: splash-pop .45s ease-out; }
-.splash-logo .logo-mark { width: 54px; height: 54px; border-radius: 17px; font-size: 18px; }
+.splash-logo .logo-mark { width: 58px; height: 58px; border-radius: 16px; }
 .splash-logo .logo-text { color: #fff; font-size: 30px; }
 .splash-caption { color: #8d9db7; font-size: 9px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
 .splash-bar { width: 108px; height: 3px; margin-top: 8px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.14); }
@@ -896,3 +891,9 @@ a.panel-also-row:hover { color: var(--accent); }
 @keyframes splash-pop { from { opacity: 0; transform: translateY(5px) scale(.97); } }
 @keyframes splash-slide { from { transform: translateX(-120%); } to { transform: translateX(300%); } }
 @media (prefers-reduced-motion: reduce) { .splash-logo, .splash-bar span { animation: none; } }
+
+/* Marca TN: símbolo proprietário aplicado no cabeçalho, menu e abertura. */
+.logo .logo-mark, .sidebar-brand .logo-mark { width: 44px; height: 44px; }
+@media (max-width: 700px) {
+  .logo .logo-mark { width: 38px; height: 38px; }
+}

@@ -76,3 +76,15 @@ No celular, o menu lateral funciona como gaveta e há uma barra inferior com ata
 **Frequências:** o robô do GitHub continua coletando notícias aproximadamente a cada 30 minutos. Enquanto a página inicial está aberta, o navegador revalida o arquivo publicado a cada 5 minutos; isso não executa uma nova coleta RSS.
 
 O redesign altera principalmente `docs/index.html`, `docs/assets/css/main.css`, `docs/assets/js/app.js`, o manifesto e a versão do cache do service worker. O pipeline RSS, a classificação, a deduplicação, os resumos por IA, os favoritos e a sincronização não foram substituídos.
+
+## Atualização 2.1 — identidade TN e saúde dos feeds
+
+- Símbolo TN aplicado ao cabeçalho, menu, splash e ícones PWA.
+- Paleta do ícone baseada na referência enviada (laranja/dourado e roxo).
+- Painel de fontes diferencia feed acessível sem notícias válidas de falha HTTP/conexão.
+- Diagnóstico registra entradas encontradas, itens filtrados e tempo de resposta.
+- Fontes adicionais: G1 Política, Folha Poder, E-Commerce Brasil e BBC News Brasil.
+- URLs do Tecmundo e Exame ajustadas; filtros de Mundo Conectado e Tecmundo ampliados.
+- Nenhuma alteração no Supabase, tabelas ou políticas RLS.
+
+As fontes adicionadas/ajustadas estão marcadas como não verificadas até a primeira execução do workflow. Confirme o resultado em `docs/data/status.json`.

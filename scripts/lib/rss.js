@@ -30,7 +30,7 @@ export async function fetchAllFeeds(sources) {
       const src = batch[idx];
       if (r.status === 'fulfilled') {
         collected.push(...r.value.items);
-        status.push({ id: src.id, name: src.name, ok: true, count: r.value.items.length, ms: r.value.ms });
+        status.push({ id: src.id, name: src.name, ok: true, count: r.value.items.length, entries: r.value.entries, filtered: Math.max(0, r.value.entries - r.value.items.length), ms: r.value.ms });
       } else {
         const message = r.reason?.message || String(r.reason);
         console.error(`[RSS] ${src.id}: ${message}`);
@@ -57,9 +57,9 @@ async function fetchFeed(source) {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
   const xml = await readBody(res);
-  const items = await parseFeed(xml, source);
-  if (!items.length) throw new Error('feed sem itens válidos');
-  return { items, ms: Date.now() - started };
+  const parsed = await parseFeed(xml, source);
+  if (!parsed.entries) throw new Error('feed acessível, mas sem entradas RSS/Atom');
+  return { items: parsed.items, entries: parsed.entries, ms: Date.now() - started };
 }
 
 async function readBody(res) {
@@ -86,6 +86,7 @@ async function parseFeed(xml, source) {
   const blocks = xml.match(isAtom ? /<entry[\s>][\s\S]*?<\/entry>/gi : /<item[\s>][\s\S]*?<\/item>/gi) || [];
 
   const out = [];
+  const entries = blocks.length;
   for (const block of blocks.slice(0, PER_FEED_LIMIT)) {
     try {
       const raw = isAtom ? readAtomEntry(block) : readRssItem(block);
@@ -95,7 +96,7 @@ async function parseFeed(xml, source) {
       console.error(`[RSS] item inválido em ${source.id}:`, e.message);
     }
   }
-  return out;
+  return { items: out, entries };
 }
 
 function readRssItem(block) {

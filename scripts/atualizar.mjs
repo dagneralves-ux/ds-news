@@ -75,9 +75,9 @@ async function main() {
   }
 
   // Saúde das fontes: só regrava se alguma fonte mudou de "funciona" para "falha" (ou vice-versa)
-  const brief = status.map(s => ({ id: s.id, name: s.name, ok: s.ok, count: s.count, erro: s.error || undefined }));
+  const brief = status.map(s => ({ id: s.id, name: s.name, ok: s.ok, count: s.count, entradas: s.entries || 0, filtradas: s.filtered || 0, ms: s.ms || null, erro: s.error || undefined }));
   const prev = readJson(STATUS_FILE, { fontes: [] });
-  const sig = list => JSON.stringify((list || []).map(s => [s.id, s.ok]));
+  const sig = list => JSON.stringify((list || []).map(s => [s.id, s.ok, s.count, s.entradas, s.filtradas, s.erro]));
   if (sig(prev.fontes) !== sig(brief)) {
     writeFileSync(STATUS_FILE, JSON.stringify({ verificadoEm: new Date().toISOString(), fontes: brief }));
   }

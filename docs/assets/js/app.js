@@ -927,9 +927,17 @@ async function loadSources() {
   if (!st?.fontes?.length) { el.textContent = 'Ainda sem verificação de fontes.'; return; }
   const ok = st.fontes.filter(f => f.ok).length;
   const bad = st.fontes.filter(f => !f.ok);
-  el.innerHTML = `<strong>${ok} de ${st.fontes.length}</strong> fontes respondendo` +
-    (bad.length ? `<details class="sources-bad"><summary>Ver as que falharam (${bad.length})</summary><ul>${
-      bad.map(f => `<li>${escapeHtml(f.name)} <small>${escapeHtml(f.erro || '')}</small></li>`).join('')}</ul></details>` : '');
+  const quiet = st.fontes.filter(f => f.ok && f.count === 0);
+  const detail = f => {
+    if (!f.ok) return escapeHtml(f.erro || 'Falha ao consultar');
+    if (f.count === 0) return `Feed acessível · ${Number(f.filtradas || 0)} entradas ignoradas por data, formato ou filtro`;
+    return `${Number(f.count)} notícias válidas · ${Number(f.ms || 0)} ms`;
+  };
+  el.innerHTML = `<strong>${ok} de ${st.fontes.length}</strong> feeds acessíveis` +
+    (quiet.length ? `<details class="sources-bad"><summary>Sem notícias válidas agora (${quiet.length})</summary><ul>${
+      quiet.map(f => `<li>${escapeHtml(f.name)} <small>${detail(f)}</small></li>`).join('')}</ul></details>` : '') +
+    (bad.length ? `<details class="sources-bad"><summary>Falhas de conexão (${bad.length})</summary><ul>${
+      bad.map(f => `<li>${escapeHtml(f.name)} <small>${detail(f)}</small></li>`).join('')}</ul></details>` : '');
 }
 
 function hideSplash() {
