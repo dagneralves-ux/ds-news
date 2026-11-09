@@ -30,7 +30,7 @@ export async function fetchAllFeeds(sources) {
       const src = batch[idx];
       if (r.status === 'fulfilled') {
         collected.push(...r.value.items);
-        status.push({ id: src.id, name: src.name, ok: true, count: r.value.items.length, entries: r.value.entries, filtered: Math.max(0, r.value.entries - r.value.items.length), ms: r.value.ms });
+        status.push({ id: src.id, name: src.name, ok: true, count: r.value.items.length, entries: r.value.entries, filtered: Math.max(0, r.value.entries - r.value.items.length), ms: r.value.ms, mode: r.value.mode });
       } else {
         const message = r.reason?.message || String(r.reason);
         console.error(`[RSS] ${src.id}: ${message}`);
@@ -57,9 +57,17 @@ async function fetchFeed(source) {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
   const xml = await readBody(res);
-  const parsed = await parseFeed(xml, source);
-  if (!parsed.entries) throw new Error('feed acessível, mas sem entradas RSS/Atom');
-  return { items: parsed.items, entries: parsed.entries, ms: Date.now() - started };
+  let parsed = await parseFeed(xml, source);
+  let mode = 'rss';
+  if (!parsed.entries && source.htmlFallback && /<html[\s>]|<!doctype html/i.test(xml)) {
+    parsed = await parseHtmlListing(xml, source);
+    mode = 'html-fallback';
+  }
+  if (!parsed.entries) {
+    if (/<html[\s>]|<!doctype html/i.test(xml)) throw new Error('URL retornou página HTML, não um feed RSS/Atom');
+    throw new Error('XML recebido, mas sem itens RSS/Atom reconhecíveis');
+  }
+  return { items: parsed.items, entries: parsed.entries, ms: Date.now() - started, mode };
 }
 
 async function readBody(res) {
@@ -80,10 +88,53 @@ async function readBody(res) {
 }
 
 // ── Parser ───────────────────────────────────────────────────
+// Alguns publishers mantêm uma página HTML de listagem no lugar de um RSS público.
+// Só ativamos este fallback explicitamente por fonte; nunca interpretamos HTML genérico como feed.
+async function parseHtmlListing(html, source) {
+  const base = new URL(source.url);
+  const anchors = html.match(/<a\b[^>]*href\s*=\s*["'][^"']+["'][^>]*>[\s\S]*?<\/a>/gi) || [];
+  const seen = new Set();
+  const items = [];
+  for (const anchor of anchors) {
+    const href = (anchor.match(/\bhref\s*=\s*["']([^"']+)["']/i) || [])[1];
+    if (!href) continue;
+    let link;
+    try { link = new URL(decodeEntities(href), base).toString(); } catch { continue; }
+    if (link.startsWith('http:')) link = link.replace(/^http:/, 'https:');
+    const u = new URL(link);
+    if (u.hostname !== base.hostname && !u.hostname.endsWith('.' + base.hostname)) continue;
+    if (seen.has(link)) continue;
+    if (/\/(feed|tag|category|author|page|wp-content|wp-admin)(\/|$)/i.test(u.pathname)) continue;
+    const inner = anchor.replace(/^<a\b[^>]*>/i, '').replace(/<\/a>$/i, '');
+    const title = cleanText(inner, 220);
+    if (title.length < 22 || /^(ler mais|saiba mais|ver mais|continue lendo)$/i.test(title)) continue;
+    seen.add(link);
+    const dateMatch = inner.match(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})\b/);
+    const dateStr = dateMatch ? `${dateMatch[3].length === 2 ? '20' + dateMatch[3] : dateMatch[3]}-${dateMatch[2].padStart(2, '0')}-${dateMatch[1].padStart(2, '0')}T12:00:00` : '';
+    const item = await normalize({ title, link, dateStr, summaryRaw: '' }, source);
+    if (item) items.push(item);
+    if (items.length >= PER_FEED_LIMIT) break;
+  }
+  return { items, entries: seen.size };
+}
+
 
 async function parseFeed(xml, source) {
-  const isAtom = /<feed[\s>]/i.test(xml) && !/<rss[\s>]/i.test(xml);
-  const blocks = xml.match(isAtom ? /<entry[\s>][\s\S]*?<\/entry>/gi : /<item[\s>][\s\S]*?<\/item>/gi) || [];
+  // RSS 2.x, RDF/RSS 1.0, Atom e variantes com namespace.
+  const isAtom = /<(?:[\w.-]+:)?feed[\s>]/i.test(xml) && !/<(?:[\w.-]+:)?rss[\s>]/i.test(xml);
+  const tagName = isAtom ? '(?:[\w.-]+:)?entry' : '(?:[\w.-]+:)?item';
+  const blocks = xml.match(new RegExp(`<${tagName}\\b[^>]*>[\\s\\S]*?<\\/${tagName}>`, 'gi')) || [];
+  if (!blocks.length && /jsonfeed\.org/i.test(xml)) {
+    try {
+      const feed = JSON.parse(xml);
+      const items = [];
+      for (const entry of (feed.items || []).slice(0, PER_FEED_LIMIT)) {
+        const item = await normalize({ title: entry.title, link: entry.url || entry.external_url, dateStr: entry.date_published || entry.date_modified, summaryRaw: entry.summary || entry.content_text || entry.content_html, image: entry.image || entry.banner_image || '' }, source);
+        if (item) items.push(item);
+      }
+      return { items, entries: (feed.items || []).length };
+    } catch { /* segue para diagnóstico padrão */ }
+  }
 
   const out = [];
   const entries = blocks.length;
@@ -129,7 +180,8 @@ function readAtomEntry(block) {
 }
 
 function getTag(xml, name) {
-  const re = new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)</${name}>`, 'i');
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`<(?:[\\w.-]+:)?${escaped}(?:\\s[^>]*)?>([\\s\\S]*?)</(?:[\\w.-]+:)?${escaped}\\s*>`, 'i');
   const m = xml.match(re);
   return m ? m[1].trim() : '';
 }
@@ -140,7 +192,7 @@ function attr(tag, name) {
 }
 
 function extractAtomLink(block) {
-  const tags = block.match(/<link\b[^>]*>/gi) || [];
+  const tags = block.match(/<(?:[\w.-]+:)?link\b[^>]*>/gi) || [];
   let fallback = '';
   for (const t of tags) {
     const href = attr(t, 'href');

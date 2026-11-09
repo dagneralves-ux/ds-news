@@ -88,3 +88,11 @@ O redesign altera principalmente `docs/index.html`, `docs/assets/css/main.css`, 
 - Nenhuma alteração no Supabase, tabelas ou políticas RLS.
 
 As fontes adicionadas/ajustadas estão marcadas como não verificadas até a primeira execução do workflow. Confirme o resultado em `docs/data/status.json`.
+
+
+## Atualização TN — correção de fontes e identidade visual
+- Ícones PWA, favicon, tela inicial e marcas do cabeçalho usam o arquivo TN azul fornecido, sem redesenho ou alteração de cores.
+- Parser RSS aceita tags com namespace e JSON Feed; fontes explicitamente marcadas podem usar fallback de captura de links em páginas HTML.
+- E-Commerce Brasil aponta para o feed geral oficial; Neil Patel Brasil usa a listagem brasileira com fallback HTML.
+- O painel diferencia captura por RSS e captura pela página do publisher.
+- O Supabase e suas tabelas/políticas não foram alterados.

@@ -129,7 +129,7 @@ img { max-width: 100%; }
   height: 42px;
   object-fit: contain;
   border-radius: 12px;
-  filter: drop-shadow(0 5px 9px rgba(105, 65, 145, .18));
+  filter: drop-shadow(0 5px 9px rgba(25, 83, 190, .20));
 }
 .logo-lockup { display: grid; gap: 4px; min-width: 0; }
 .logo-text { color: var(--ink); font: 800 19px/1 var(--font-body); letter-spacing: -.055em; }

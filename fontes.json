@@ -170,7 +170,8 @@
     "name": "Zupi",
     "url": "https://zupi.com.br/feed/",
     "category": "design",
-    "verificada": false
+    "verificada": false,
+    "htmlFallback": true
   },
   {
     "id": "b9",
@@ -205,21 +206,24 @@
     "name": "Mundo do Marketing",
     "url": "https://mundodomarketing.com.br/feed-rss",
     "category": "marketing",
-    "verificada": false
+    "verificada": false,
+    "htmlFallback": true
   },
   {
     "id": "rockcontent",
     "name": "Rock Content",
     "url": "https://rockcontent.com/br/blog/feed/",
     "category": "marketing",
-    "verificada": false
+    "verificada": false,
+    "htmlFallback": true
   },
   {
     "id": "neilpatel",
     "name": "Neil Patel Brasil",
-    "url": "https://neilpatel.com/br/blog/feed/",
+    "url": "https://neilpatel.com/br/blog/",
     "category": "marketing",
-    "verificada": false
+    "verificada": false,
+    "htmlFallback": true
   },
   {
     "id": "g1-politica",
@@ -240,7 +244,7 @@
   {
     "id": "ecommercebrasil",
     "name": "E-Commerce Brasil",
-    "url": "https://www.ecommercebrasil.com.br/feed/rss/?post_type=noticias",
+    "url": "https://www.ecommercebrasil.com.br/feed/rss/",
     "category": "marketing",
     "verificada": false
   },

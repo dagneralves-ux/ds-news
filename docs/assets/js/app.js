@@ -930,8 +930,9 @@ async function loadSources() {
   const quiet = st.fontes.filter(f => f.ok && f.count === 0);
   const detail = f => {
     if (!f.ok) return escapeHtml(f.erro || 'Falha ao consultar');
-    if (f.count === 0) return `Feed acessível · ${Number(f.filtradas || 0)} entradas ignoradas por data, formato ou filtro`;
-    return `${Number(f.count)} notícias válidas · ${Number(f.ms || 0)} ms`;
+    if (f.count === 0) return `Feed acessível · ${Number(f.filtradas || 0)} entradas ignoradas por data ou filtro`;
+    const origin = f.modo === 'html-fallback' ? ' · captura pela página do site' : '';
+    return `${Number(f.count)} notícias válidas${origin} · ${Number(f.ms || 0)} ms`;
   };
   el.innerHTML = `<strong>${ok} de ${st.fontes.length}</strong> feeds acessíveis` +
     (quiet.length ? `<details class="sources-bad"><summary>Sem notícias válidas agora (${quiet.length})</summary><ul>${
