@@ -141,3 +141,11 @@ As fontes adicionadas/ajustadas estão marcadas como não verificadas até a pri
 - Capa tipográfica (grade + brilho + ícone grande) para destaques e painéis sem foto, inclusive quando a foto falha ao carregar.
 - Novo "Resumo do dia": notícias das últimas 24h, editoria líder e barras por editoria; mostra "N novas desde sua última visita".
 - Camada visual futurista: gradiente de acento, vidro, brilho ao passar o mouse, grade sutil no topo. Claro, escuro e celular.
+
+
+## 2.7 — Tema único e nova paleta
+- Removido o modo claro/escuro (botão, script e regras). Agora há um tema só.
+- Paleta: Gargoyle Gas `#FFE14F`, Space Cadet `#192853`, Alice Blue `#ECF4F7`. Fundo Alice Blue, textos e menu lateral Space Cadet, destaques e botões em amarelo.
+
+## 2.8 — Menu lateral em vidro Alice Blue
+- Barra lateral translúcida (vidro fosco) em Alice Blue, com texto Space Cadet e brilho amarelo; item ativo em cartão branco com filete amarelo.

@@ -838,25 +838,6 @@ function refreshPanelFav() {
   btn.textContent = on ? 'Salvo nos favoritos' : 'Salvar nos favoritos';
 }
 
-// ── Tema (claro/escuro) ──────────────────────────────────────
-function toggleTheme() {
-  const root = document.documentElement;
-  const dark = root.dataset.theme
-    ? root.dataset.theme === 'dark'
-    : window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const next = dark ? 'light' : 'dark';
-  root.dataset.theme = next;
-  try { localStorage.setItem('ds_theme', next); } catch { /* ignore */ }
-  document.querySelectorAll('meta[name="theme-color"]').forEach(meta => {
-    meta.setAttribute('content', next === 'dark' ? '#0d1422' : '#f5f7fb');
-  });
-  const themeButton = $('#btnTheme');
-  if (themeButton) {
-    themeButton.setAttribute('aria-label', next === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro');
-    themeButton.setAttribute('title', next === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro');
-  }
-}
-
 // ── Busca ────────────────────────────────────────────────────
 function openSearch() {
   if (State.searchOpen) return;
@@ -973,7 +954,6 @@ function handleClick(e) {
     case 'toggle-ai':     toggleAI(el, id); break;
     case 'read':          markRead(id); if (State.searchOpen) closeSearch(); return;   // deixa o link abrir
     case 'trend':         openSearch(); $('#searchInput').value = el.dataset.q; performSearch(el.dataset.q); break;
-    case 'theme':         toggleTheme(); break;
     case 'view':          setView(value); break;
     case 'open-search':   openSearch(); break;
     case 'close-search':  closeSearch(); break;
@@ -1082,11 +1062,7 @@ async function init() {
     : { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
   $('#heroDate').textContent = heroDateText.charAt(0).toUpperCase() + heroDateText.slice(1);
   $('#searchShortcut').textContent = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K';
-  const initialDark = document.documentElement.dataset.theme
-    ? document.documentElement.dataset.theme === 'dark'
-    : window.matchMedia('(prefers-color-scheme: dark)').matches;
-  $('#btnTheme').setAttribute('aria-label', initialDark ? 'Ativar tema claro' : 'Ativar tema escuro');
-  $('#btnTheme').setAttribute('title', initialDark ? 'Ativar tema claro' : 'Ativar tema escuro');
+  try { localStorage.removeItem('ds_theme'); } catch { /* ignore */ }
 
   document.addEventListener('click', handleClick);
   document.addEventListener('keydown', handleKeydown);
