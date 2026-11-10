@@ -15,7 +15,7 @@ const STOP_WORDS = new Set(`sobre contra entre desde ainda mesmo todos todas apo
   vence venceu lanca lancou aprova aprovou anuncia anunciou divulga divulgou decide decidiu garante garantiu assume assumiu
   confirma confirmou revela revelou apresenta apresentou mostra volta perde perdeu ganha ganhou define fecha abre chega deixa
   entra sai explica explicam cresce caem sobe desce muda mudam ganham perdem aposta apostam modelo versao recursos recurso
-  nova novo novidade novidades para como suas seus numa umas uns pelos pelas`.split(/\s+/));
+  artigo artigos opiniao coluna video videos foto fotos veja nova novo novidade novidades para como suas seus numa umas uns pelos pelas`.split(/\s+/));
 
 export function generateTrends(items) {
   const since = Date.now() - 24 * HOUR;
@@ -33,7 +33,7 @@ export function generateTrends(items) {
 
     // "1º turno" e "2º turno" viram "primeiro turno" e "segundo turno".
     const ORDINALS = { '1º': 'primeiro', '2º': 'segundo', '1ª': 'primeira', '2ª': 'segunda' };
-    const tokens = (item.title.toLowerCase().match(/[\p{L}\p{N}]+/gu) || [])
+    const tokens = (item.title.replace(/&[a-z]+;|&#\d+;/gi, ' ').toLowerCase().match(/[\p{L}\p{N}]+/gu) || [])
       .map(w => ORDINALS[w] || w)
       .map(w => ({ w, key: normalizeText(w) }));
     const usable = t => t.key.length >= 4 && !STOP_WORDS.has(t.key) && !/^\d+$/.test(t.key);

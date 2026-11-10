@@ -125,3 +125,19 @@ As fontes adicionadas/ajustadas estão marcadas como não verificadas até a pri
 - DM Sans e Newsreader (normal e itálico) agora ficam em `docs/assets/fonts/` (formato WOFF, subconjunto latino, licença OFL incluída). O site não faz mais nenhum pedido ao Google Fonts.
 - A política de segurança (CSP) passou a aceitar fontes só do próprio site (`font-src 'self'`), e o service worker guarda as fontes para uso offline.
 - Para trocar ou atualizar as fontes, substitua os arquivos em `docs/assets/fonts/` mantendo os mesmos nomes.
+
+## Importante ao atualizar os arquivos do site
+- **Não envie a pasta `docs/data`** do ZIP por cima do repositório: ela guarda as notícias e o estado das fontes gerados pelo robô. Se o arquivo `news.json` for sobrescrito por uma versão vazia, o site mostra "0 notícias" até a próxima coleta (até ~30 minutos). Para forçar na hora: **Actions > Atualizar notícias > Run workflow**.
+- A partir da versão 2.5.1 o ZIP já não inclui `docs/data/news.json`.
+
+
+## 2.5.2
+- Corrigido: entidades HTML como `&rsaquo;` viravam a palavra "Rsaquo" em títulos e em "Assuntos em alta". Mais entidades decodificadas e o robô limpa títulos/resumos já gravados.
+- "artigo", "opinião", "vídeo" etc. não entram mais como assunto em alta.
+
+
+## 2.6 — Visual "Aurora"
+- Ícones de linha por editoria (menu, barras, capas) no lugar dos emojis.
+- Capa tipográfica (grade + brilho + ícone grande) para destaques e painéis sem foto, inclusive quando a foto falha ao carregar.
+- Novo "Resumo do dia": notícias das últimas 24h, editoria líder e barras por editoria; mostra "N novas desde sua última visita".
+- Camada visual futurista: gradiente de acento, vidro, brilho ao passar o mouse, grade sutil no topo. Claro, escuro e celular.

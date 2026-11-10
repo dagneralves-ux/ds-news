@@ -1,5 +1,5 @@
 /* TabNews: service worker. Páginas e dados: rede primeiro (sempre a versão nova), cache como reserva. */
-const VERSION = 'tabnews-v14-fontes-locais';
+const VERSION = 'tabnews-v16-aurora';
 const CORE = ['./', 'index.html', 'manifest.json', 'assets/css/main.css', 'assets/js/config.js', 'assets/js/api.js',
   'assets/js/favorites.js', 'assets/js/sync.js', 'assets/js/app.js', 'assets/js/pwa.js', 'assets/js/theme.js',
   'assets/fonts/dm-sans.woff', 'assets/fonts/newsreader.woff', 'assets/fonts/newsreader-italic.woff', 'icons/logo-tn.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png'];

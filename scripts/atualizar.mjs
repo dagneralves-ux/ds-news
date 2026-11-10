@@ -8,7 +8,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { fetchAllFeeds } from './lib/rss.js';
+import { fetchAllFeeds, decodeEntities } from './lib/rss.js';
 import { summarizeItems } from './lib/ai.js';
 import { generateTrends } from './lib/trends.js';
 import { CATEGORIES } from './lib/categorias.js';
@@ -46,6 +46,17 @@ async function main() {
     .filter((n, i) => i < 30 || now - new Date(n.date) <= MAX_AGE_MS)
     .slice(0, MAX_ITEMS);
 
+  // Limpa entidades HTML que ficaram em notícias gravadas por versões anteriores (ex.: "&rsaquo;").
+  let cleaned = false;
+  for (const n of merged) {
+    for (const k of ['title', 'summary']) {
+      if (typeof n[k] === 'string' && /&(?:#\d+|#x[0-9a-f]+|[a-z]+);/i.test(n[k])) {
+        const fixed = decodeEntities(n[k]);
+        if (fixed !== n[k]) { n[k] = fixed; cleaned = true; }
+      }
+    }
+  }
+
   // IA: notícias novas primeiro, depois as antigas que ficaram sem resumo (até 2 tentativas)
   const pool = merged
     .filter(n => !n.aiSummary && (n.aiAttempts || 0) < 2 && (n.summary || '').length >= 60)
@@ -59,7 +70,7 @@ async function main() {
   if (aiError && aiError !== 'sem chave de IA') console.warn('[IA] aviso:', aiError);
 
   // Só grava (e portanto só gera commit) quando algo mudou
-  const changed = newOnes.length > 0 || aiTouched || merged.length !== existing.length;
+  const changed = newOnes.length > 0 || aiTouched || cleaned || merged.length !== existing.length;
   mkdirSync(DATA_DIR, { recursive: true });
   if (changed || !existsSync(NEWS_FILE)) {
     const out = {

@@ -86,6 +86,19 @@ function getGreeting() {
   return 'Boa noite';
 }
 
+// ── Ícones de linha por editoria (substituem os emojis) ──────
+const CAT_SVG = {
+  futebol: '<circle cx="12" cy="12" r="9"/><path d="M12 7.5l3.8 2.8-1.4 4.4H9.6l-1.4-4.4z"/><path d="M12 7.5V3M15.8 10.3l4.2-1.4M14.4 14.7l2.6 3.5M9.6 14.7l-2.6 3.5M8.2 10.3L4 8.9"/>',
+  politica: '<path d="M3 20h18M5 20V10M9.5 20V10M14.5 20V10M19 20V10"/><path d="M12 3L3 9h18z"/>',
+  ia: '<rect x="6" y="6" width="12" height="12" rx="2.5"/><path d="M9.5 3v3M14.5 3v3M9.5 18v3M14.5 18v3M3 9.5h3M3 14.5h3M18 9.5h3M18 14.5h3"/><circle cx="12" cy="12" r="1.8"/>',
+  design: '<path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-.9 2-1.8 0-1.4-1.2-1.6-1.2-2.7 0-.9.7-1.5 1.7-1.5H17a4 4 0 0 0 4-4C21 6.7 17 3 12 3z"/><circle cx="7.8" cy="11" r="1"/><circle cx="10.5" cy="7.3" r="1"/><circle cx="15" cy="7.8" r="1"/>',
+  marketing: '<path d="M3 12v3a1 1 0 0 0 1 1h2l8 4V4L6 8H4a1 1 0 0 0-1 1z" transform="translate(0 0)"/><path d="M18 9a4.5 4.5 0 0 1 0 6"/><path d="M6.5 16l1 4.5"/>',
+  all: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5v16M8 7h8M8 11h8"/>',
+};
+function catSvg(key, cls = 'cat-svg') {
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${CAT_SVG[key] || CAT_SVG.all}</svg>`;
+}
+
 function categoryOf(key) {
   return CATEGORIES[key] || { label: key, icon: '📰', color: '#7c84f0' };
 }
@@ -226,7 +239,7 @@ function sectionHtml(title, color, count, bodyHtml, moreCategory = null, hideCat
 function emptyStateHtml(icon, title, sub, actionHtml = '') {
   return `
     <div class="empty-state">
-      <div class="empty-state-icon" aria-hidden="true">${escapeHtml(icon || '🗞️')}</div>
+      <div class="empty-state-icon" aria-hidden="true">${catSvg('all', 'empty-svg')}</div>
       <div class="empty-state-title">${escapeHtml(title)}</div>
       <div class="empty-state-sub">${escapeHtml(sub)}</div>
       ${actionHtml}
@@ -282,6 +295,52 @@ function render() {
   return renderList(content);
 }
 
+/** Capa tipográfica para notícias sem foto: grade, brilho da editoria, ícone grande e a fonte. */
+function coverHtml(item, cat) {
+  return `<div class="cover" aria-hidden="true">
+    <span class="cover-grid"></span><span class="cover-glow"></span>
+    ${catSvg(item.category, 'cover-ico')}
+    <span class="cover-label">${escapeHtml(cat.label)}</span>
+    <span class="cover-src">${escapeHtml(item.source || '')}</span>
+  </div>`;
+}
+
+/** Radar das últimas 24h: barras por editoria + novidades desde a última visita. */
+function briefingHtml() {
+  const items = API._data?.itens || [];
+  if (!items.length) return '';
+  const now = Date.now();
+  const day = items.filter(n => now - new Date(n.date) <= 24 * 3600000);
+  const base = day.length >= 3 ? day : items;
+  const counts = {};
+  base.forEach(n => { counts[n.category] = (counts[n.category] || 0) + 1; });
+  const rows = Object.entries(CATEGORIES).filter(([k]) => k !== 'all' && counts[k])
+    .sort((a, b) => counts[b[0]] - counts[a[0]]);
+  if (!rows.length) return '';
+  const max = counts[rows[0][0]];
+  const lead = rows[0][1];
+  const prev = State.prevVisit;
+  const fresh = prev ? items.filter(n => new Date(n.date).getTime() > prev).length : 0;
+  const period = base === day ? 'nas últimas 24h' : 'no período';
+  return `
+    <section class="briefing" aria-label="Resumo do dia">
+      <div class="briefing-head">
+        <span class="briefing-kicker"><span class="status-pulse"></span> Resumo do dia</span>
+        <p class="briefing-text"><strong>${base.length.toLocaleString('pt-BR')} notícias</strong> ${period}. <span style="--c:${escapeHtml(lead.color)}" class="briefing-lead">${escapeHtml(lead.label)}</span> lidera o ciclo.</p>
+        ${fresh > 0 ? `<button type="button" class="fresh-chip" data-action="filter" data-value="24h">${fresh.toLocaleString('pt-BR')} novas desde sua última visita</button>` : ''}
+      </div>
+      <div class="briefing-bars">
+        ${rows.map(([k, c]) => `
+          <button type="button" class="bar-row" data-action="category" data-value="${escapeHtml(k)}" style="--c:${escapeHtml(c.color)}">
+            <span class="bar-ico">${catSvg(k)}</span>
+            <span class="bar-name">${escapeHtml(c.label)}</span>
+            <span class="bar-track"><span class="bar-fill" style="width:${Math.max(6, Math.round(counts[k] / max * 100))}%"></span></span>
+            <span class="bar-num">${counts[k]}</span>
+          </button>`).join('')}
+      </div>
+    </section>`;
+}
+
 function featuredHtml(list) {
   if (!list?.length) return '';
   const [main, ...rest] = list;
@@ -302,8 +361,8 @@ function featuredHtml(list) {
   return `
     <section class="featured" aria-label="Notícia em destaque">
       <article class="feat-main" id="card-${id}" style="--c:${escapeHtml(cat.color)}">
-        <div class="feat-media${image ? '' : ' no-img'}" data-icon="${escapeHtml(cat.icon || '')}">
-          ${image ? `<img class="item-img" src="${escapeHtml(image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="feat-media-mark">${escapeHtml(cat.icon || '')}</span>`}
+        <div class="feat-media${image ? '' : ' no-img'}" data-cat="${escapeHtml(main.category)}" data-src="${escapeHtml(main.source || '')}">
+          ${image ? `<img class="item-img" src="${escapeHtml(image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : coverHtml(main, cat)}
           <span class="feat-tag">Em destaque</span>
         </div>
         <div class="feat-body">
@@ -350,6 +409,7 @@ function renderHome(content) {
 
   const parts = [];
   if (h.trends?.length) parts.push(renderTrends(h.trends));
+  parts.push(briefingHtml());
   parts.push(featuredHtml(h.featured));
   for (const s of h.sections || []) {
     const cat = CATEGORIES[s.category];
@@ -357,8 +417,9 @@ function renderHome(content) {
     parts.push(stripHtml(cat.label, cat.color, s.total, s.items, s.category));
   }
 
-  content.innerHTML = parts.join('') || emptyStateHtml(
-    '🗞️', 'Ainda não há notícias', 'A coleta é atualizada automaticamente. Tente novamente em instantes.');
+  content.innerHTML = parts.join('') || (h.lastUpdated
+    ? emptyStateHtml('🗞️', 'Ainda não há notícias', 'A coleta é atualizada automaticamente. Tente novamente em instantes.')
+    : emptyStateHtml('🗞️', 'O arquivo de notícias ainda está vazio', 'No GitHub, abra Actions, escolha "Atualizar notícias" e clique em Run workflow. Em cerca de 1 minuto as notícias aparecem aqui.'));
 }
 
 function renderList(content) {
@@ -388,7 +449,7 @@ function buildChrome() {
 
   $('#categoryNav').innerHTML = editorias.map(([key, c]) => `
     <button type="button" class="nav-item" data-action="category" data-value="${escapeHtml(key)}">
-      <span class="nav-emoji" aria-hidden="true">${escapeHtml(c.icon || '•')}</span>
+      <span class="nav-emoji" style="--c:${escapeHtml(c.color)}">${catSvg(key)}</span>
       <span class="nav-text">${escapeHtml(c.label)}</span>
       <span class="nav-badge" id="badge-${escapeHtml(key)}">0</span>
     </button>`).join('');
@@ -700,8 +761,8 @@ function panelHtml(item) {
       }).join('')}</div>` : '';
 
   return `
-    <div class="panel-media${image ? '' : ' no-img'}" data-icon="${escapeHtml(cat.icon || '')}" style="--c:${escapeHtml(cat.color)}">
-      ${image ? `<img class="item-img" src="${escapeHtml(image)}" alt="" referrerpolicy="no-referrer">` : `<span class="feat-media-mark">${escapeHtml(cat.icon || '')}</span>`}
+    <div class="panel-media${image ? '' : ' no-img'}" data-cat="${escapeHtml(item.category)}" data-src="${escapeHtml(item.source || '')}" style="--c:${escapeHtml(cat.color)}">
+      ${image ? `<img class="item-img" src="${escapeHtml(image)}" alt="" referrerpolicy="no-referrer">` : coverHtml(item, cat)}
     </div>
     <div class="panel-body">
       <div class="item-meta">
@@ -1004,6 +1065,13 @@ async function init() {
   try { await API.load(); } catch (e) { State.error = describeError(e); }
   buildChrome();
 
+  try {
+    State.prevVisit = Number(localStorage.getItem('tn_lastvisit')) || 0;
+    const stamp = () => { try { localStorage.setItem('tn_lastvisit', String(Date.now())); } catch { /* ignore */ } };
+    document.addEventListener('visibilitychange', () => { if (document.hidden) stamp(); });
+    window.addEventListener('pagehide', stamp);
+  } catch { /* ignore */ }
+
   let savedView = 'list';
   try { savedView = localStorage.getItem('tn_view') || 'list'; } catch { /* ignore */ }
   setView(savedView);
@@ -1034,10 +1102,12 @@ async function init() {
       img.closest('.item-thumb')?.remove();
       const media = img.closest('.feat-media, .panel-media');
       if (media) {
-        const icon = media.dataset.icon || '';
         img.remove();
         media.classList.add('no-img');
-        if (!media.querySelector('.feat-media-mark')) media.insertAdjacentHTML('afterbegin', `<span class="feat-media-mark">${escapeHtml(icon)}</span>`);
+        if (!media.querySelector('.cover')) {
+          media.style.setProperty('--c', categoryOf(media.dataset.cat).color);
+          media.insertAdjacentHTML('afterbegin', coverHtml({ category: media.dataset.cat, source: media.dataset.src }, categoryOf(media.dataset.cat)));
+        }
       }
     }
   }, true);
