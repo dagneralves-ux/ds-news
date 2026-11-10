@@ -10,6 +10,8 @@ const CONFIG = {
 
   // Favoritos e lidas compartilhados entre os aparelhos e as pessoas do grupo (Supabase).
   // Deixe url e key vazios para guardar só neste navegador. Tabela: supabase-setup.sql
+  // ATENÇÃO: o repositório é público, então a chave anon e o nome do grupo ficam visíveis. O nome do grupo
+  // funciona como senha de quem compartilha os favoritos: use algo longo e imprevisível (20+ caracteres).
   SYNC: { url: '', key: '', group: 'tabnews' },
 
   // Revalidação automática do arquivo na página inicial (5 minutos, só com a aba aberta)

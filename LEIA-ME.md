@@ -66,6 +66,8 @@ node test/servidor.mjs           # abre o site em http://localhost:8790
 ## Favoritos e lidas compartilhados (opcional)
 Por padrão, favoritos e lidas ficam só no navegador de cada pessoa. Para valerem entre aparelhos e entre o grupo, crie um projeto grátis no Supabase, rode o arquivo `supabase-setup.sql` e preencha `SYNC` em `docs/assets/js/config.js` (`url`, `key` e um nome de `group`, igual para todos). Sem isso, o site continua funcionando normalmente.
 
+**Segurança:** como o repositório é público, a chave `key` (anon) e o nome do `group` ficam visíveis a qualquer pessoa. As políticas do Supabase não têm login, então o nome do grupo é a única proteção: use um nome longo e imprevisível (20+ caracteres, por exemplo gerado por um gerenciador de senhas). Com nome curto, o site mostra um aviso no menu lateral.
+
 
 ## Interface TabNews 2.0 — Editorial Intelligence
 
@@ -96,3 +98,30 @@ As fontes adicionadas/ajustadas estão marcadas como não verificadas até a pri
 - E-Commerce Brasil aponta para o feed geral oficial; Neil Patel Brasil usa a listagem brasileira com fallback HTML.
 - O painel diferencia captura por RSS e captura pela página do publisher.
 - O Supabase e suas tabelas/políticas não foram alterados.
+
+## Atualização 2.3 — correções de interface
+- Botões sem a borda cinza padrão do navegador (reset em `button`).
+- A revalidação automática da página inicial só redesenha quando há notícia nova; sem novidade, apenas atualiza os "há X min" (a rolagem das faixas e os resumos abertos são preservados).
+- Service worker: pré-cache sem `?v=`, alinhado ao que o `index.html` pede; busca offline ignora a versão.
+- Nenhum texto menor que 11 px; cinza secundário (`--muted`) escurecido para contraste mínimo de 4,5:1.
+- Data no cabeçalho em português correto ("Terça-feira, 10 de novembro de 2026").
+
+## Atualização 2.4 — conteúdo primeiro, motor mais preciso
+**Interface**
+- Topo compacto: a primeira notícia aparece cerca de 130 px mais cedo; no celular some o cartão "Edição de hoje" e a faixa de assuntos em alta.
+- Terceiro indicador agora é **Não lidas** (usa o histórico de leitura), no lugar de "5 temas ativos".
+- Cartões sem foto: estrela e compartilhar ficaram visíveis (estavam brancos sobre branco) e sumiu a faixa vazia no topo.
+- Destaque do dia: as notícias laterais mostram um resumo curto.
+- Início no computador: cada editoria mostra 6 notícias em grade (sem rolagem horizontal escondida). No celular continua a faixa deslizante.
+- Painel de leitura: botões e teclas **J** (próxima) e **K** (anterior).
+- "Assuntos em alta" mostra só o número e ignora verbos de manchete ("vence", "lança", "aprova"...).
+
+**Motor**
+- Classificação: termos ambíguos (`var`, `robô`, `ads`, `design`, `partida`, `técnico`, `consumidor`...) valem meia pontuação; é preciso um termo forte ou dois fracos. Menos notícias fora de assunto.
+- Workflow: o robô passa a reaproveitar o próprio commit (`--amend`) em vez de criar um novo a cada 30 minutos; o histórico do repositório deixa de crescer. Exige `fetch-depth: 0` (já configurado) e que a branch `main` não tenha proteção que bloqueie force-push.
+- Supabase: aviso no menu quando o nome do grupo tem menos de 20 caracteres, e orientação de segurança no LEIA-ME.
+
+## Atualização 2.5 — fontes hospedadas no próprio site
+- DM Sans e Newsreader (normal e itálico) agora ficam em `docs/assets/fonts/` (formato WOFF, subconjunto latino, licença OFL incluída). O site não faz mais nenhum pedido ao Google Fonts.
+- A política de segurança (CSP) passou a aceitar fontes só do próprio site (`font-src 'self'`), e o service worker guarda as fontes para uso offline.
+- Para trocar ou atualizar as fontes, substitua os arquivos em `docs/assets/fonts/` mantendo os mesmos nomes.

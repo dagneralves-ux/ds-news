@@ -5,6 +5,8 @@
  */
 const Sync = {
   on: !!(CONFIG.SYNC && CONFIG.SYNC.url && CONFIG.SYNC.key),
+  // Nome de grupo curto ou previsível = qualquer pessoa que descubra o nome lê e apaga os favoritos do grupo.
+  weakGroup: ((CONFIG.SYNC && CONFIG.SYNC.group) || 'tabnews').length < 20,
   _pending: 0,
   _lastSig: '',
 

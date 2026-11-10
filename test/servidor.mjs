@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const root = process.argv[2] || join(fileURLToPath(new URL('.', import.meta.url)), '..', 'docs');
 const port = Number(process.argv[3] || 8790);
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
-  '.png': 'image/png', '.svg': 'image/svg+xml', '.txt': 'text/plain' };
+  '.png': 'image/png', '.woff': 'font/woff', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.txt': 'text/plain' };
 
 http.createServer(async (req, res) => {
   let p = decodeURIComponent(new URL(req.url, 'http://x').pathname);

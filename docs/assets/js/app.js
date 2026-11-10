@@ -208,7 +208,7 @@ function renderTrends(trends) {
   return `
     <div class="trends" aria-label="Assuntos em alta">
       <span class="trends-label">Assuntos em alta</span>
-      ${trends.map(t => `<button type="button" class="trend-chip" data-action="trend" data-q="${escapeHtml(t.title)}">${escapeHtml(t.title)}<small>${escapeHtml(t.count)} notícias</small></button>`).join('')}
+      ${trends.map(t => `<button type="button" class="trend-chip" data-action="trend" data-q="${escapeHtml(t.title)}">${escapeHtml(t.title)}<small title="${escapeHtml(t.count)} notícias nas últimas 24h">${escapeHtml(t.count)}</small></button>`).join('')}
     </div>`;
 }
 
@@ -295,6 +295,7 @@ function featuredHtml(list) {
       <button type="button" class="feat-row" data-action="open-panel" data-id="${escapeHtml(n.id)}" style="--c:${escapeHtml(c.color)}">
         <span class="feat-row-cat"><span class="sec-dot" style="background:${escapeHtml(c.color)}"></span>${escapeHtml(c.label)}</span>
         <span class="feat-row-title">${escapeHtml(n.title)}</span>
+        ${n.summary ? `<span class="feat-row-sum">${escapeHtml(n.summary)}</span>` : ''}
         <span class="feat-row-meta">${escapeHtml(n.source)} · ${escapeHtml(formatRelativeDate(n.date))}${n.also?.length ? ` · ${n.also.length + 1} fontes` : ''}</span>
       </button>`;
   }).join('');
@@ -431,9 +432,19 @@ function updateChrome() {
   const today = $('#todayCount');
   if (today) today.textContent = todayCount;
   $('#lastUpdated').textContent = lastUpdated ? formatDateTime(lastUpdated) : '—';
+  updateUnread();
 
   const label = { all: null, favorites: 'Favoritos', history: 'Histórico' }[State.category] ?? categoryOf(State.category).label;
   document.title = label ? `${label} | TabNews` : 'TabNews | Futebol, política, IA, design e marketing';
+}
+
+/** Quantas notícias carregadas ainda não foram abertas (usa o histórico deste navegador/grupo). */
+function updateUnread() {
+  const el = $('#statUnread');
+  if (!el) return;
+  const read = new Set(Store.getHistory().map(h => h.id));
+  const items = API._data?.itens || [];
+  el.textContent = items.filter(n => !read.has(n.id)).length.toLocaleString('pt-BR');
 }
 
 function applyMeta(data) {
@@ -447,12 +458,13 @@ function applyMeta(data) {
   const put = (id, v) => { const el = $(id); if (el) el.textContent = v; };
   put('#statTotal', State.meta.total.toLocaleString('pt-BR'));
   put('#statToday', State.meta.todayCount.toLocaleString('pt-BR'));
-  put('#statCats', Object.keys(CATEGORIES).filter(k => k !== 'all').length);
+  updateUnread();
 }
 
 // ── Carregamento de dados ────────────────────────────────────
 async function loadHome({ force = false, silent = false } = {}) {
   const req = ++State.reqId;
+  let skipRender = false;
   if (!silent) { State.loading = true; State.error = null; render(); }
   $('#btnRefresh')?.classList.add('loading');
 
@@ -460,6 +472,12 @@ async function loadHome({ force = false, silent = false } = {}) {
     if (force) API.clearCache();
     const data = await API.get('/api/home');
     if (req !== State.reqId) return;
+    // Revalidação automática sem notícia nova: não redesenha (preserva rolagem das faixas e resumos abertos).
+    if (silent && State.home && State.home.lastUpdated && State.home.lastUpdated === data.lastUpdated) {
+      skipRender = true;
+      refreshRelativeTimes();
+      return;
+    }
     State.home = data;
     (data.sections || []).forEach(s => remember(s.items));
     remember(data.featured);
@@ -475,10 +493,18 @@ async function loadHome({ force = false, silent = false } = {}) {
   } finally {
     if (req === State.reqId) {
       State.loading = false;
-      render();
+      if (!skipRender) render();
       $('#btnRefresh')?.classList.remove('loading');
     }
   }
+}
+
+/** Atualiza só os "há X min" na tela, sem refazer a lista. */
+function refreshRelativeTimes() {
+  $$('time.item-date[datetime]').forEach(el => {
+    const text = formatRelativeDate(el.getAttribute('datetime'));
+    if (el.textContent !== text) el.textContent = text;
+  });
 }
 
 async function loadList({ reset = true, force = false } = {}) {
@@ -605,6 +631,7 @@ function markRead(id) {
   if (!item) return;
   Store.markRead(item);
   document.getElementById(`card-${id}`)?.classList.add('read');
+  updateUnread();
   $('#badge-history').textContent = Store.getHistoryCount();
 }
 
@@ -700,7 +727,7 @@ function panelHtml(item) {
 function openPanel(id) {
   const item = findItem(id);
   if (!item) return;
-  const trigger = document.activeElement;
+  const trigger = State.panelId ? State.panelTrigger : document.activeElement;   // navegando dentro do painel mantém o gatilho original
   if (State.searchOpen) closeSearch();
   State.panelTrigger = trigger;
   State.panelId = id;
@@ -711,6 +738,23 @@ function openPanel(id) {
   $('#newsPanel').setAttribute('aria-hidden', 'false');
   $('#panelContent').scrollTop = 0;
   $('#panelClose').focus({ preventScroll: true });
+}
+
+/** Ids das notícias visíveis na tela, na ordem em que aparecem (base do "anterior / próxima"). */
+function visibleNewsIds() {
+  const seen = new Set();
+  return $$('#mainContent [data-action="open-panel"][data-id]')
+    .filter(el => el.getClientRects().length > 0)
+    .map(el => el.dataset.id)
+    .filter(id => !seen.has(id) && seen.add(id));
+}
+
+function navigatePanel(dir) {
+  if (!State.panelId) return;
+  const ids = visibleNewsIds();
+  const next = ids[ids.indexOf(State.panelId) + dir];
+  if (next) openPanel(next);
+  else showToast(dir > 0 ? 'Fim da lista' : 'Início da lista');
 }
 
 function closePanel() {
@@ -850,6 +894,8 @@ function handleClick(e) {
   switch (action) {
     case 'open-panel':    openPanel(id); break;
     case 'close-panel':   closePanel(); break;
+    case 'panel-prev':    navigatePanel(-1); break;
+    case 'panel-next':    navigatePanel(1); break;
     case 'strip': {
       const strip = document.getElementById(`strip-${id}`);
       strip?.scrollBy({ left: Number(value) * Math.max(280, strip.clientWidth * 0.85), behavior: 'smooth' });
@@ -888,6 +934,11 @@ function handleKeydown(e) {
   if (e.target?.id === 'headerSearchInput' && (e.key === 'Enter' || e.key === ' ')) {
     e.preventDefault();
     openSearch();
+  }
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '');
+  if (State.panelId && !State.searchOpen && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    if (e.key === 'j' || e.key === 'J') { e.preventDefault(); navigatePanel(1); }
+    if (e.key === 'k' || e.key === 'K') { e.preventDefault(); navigatePanel(-1); }
   }
   if (e.key === 'Escape') {
     if (State.searchOpen) closeSearch();
@@ -958,9 +1009,10 @@ async function init() {
   setView(savedView);
   $('#heroGreeting').innerHTML = `${getGreeting()}, <em>Dagner.</em>`;
   const small = window.matchMedia('(max-width: 600px)').matches;
-  $('#heroDate').textContent = new Date().toLocaleDateString('pt-BR', small
+  const heroDateText = new Date().toLocaleDateString('pt-BR', small
     ? { weekday: 'short', day: '2-digit', month: 'short' }
     : { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+  $('#heroDate').textContent = heroDateText.charAt(0).toUpperCase() + heroDateText.slice(1);
   $('#searchShortcut').textContent = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K';
   const initialDark = document.documentElement.dataset.theme
     ? document.documentElement.dataset.theme === 'dark'
@@ -997,7 +1049,9 @@ async function init() {
 
   if (Sync.on) {
     const note = $('#syncNote');
-    if (note) note.textContent = 'Favoritos e lidas compartilhados com o grupo';
+    if (note) note.textContent = Sync.weakGroup
+      ? 'Atenção: nome do grupo curto. Troque por um nome longo e secreto em config.js.'
+      : 'Favoritos e lidas compartilhados com o grupo';
     Sync.start(() => { updateChrome(); if (currentView() === 'favorites' || currentView() === 'history') render(); });
   }
   hideSplash();

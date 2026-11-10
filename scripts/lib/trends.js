@@ -4,14 +4,18 @@ import { normalizeText } from './classify.js';
 const HOUR = 3600000;
 
 // Palavras que sozinhas não dizem nada, mas formam assunto em par: "segundo turno", "Nossa Senhora".
-const PAIR_OK_STOP = new Set(['primeiro', 'primeira', 'segundo', 'segunda', 'nossa', 'nosso', 'novo', 'nova']);
+const PAIR_OK_STOP = new Set(['primeiro', 'primeira', 'segundo', 'segunda', 'nossa', 'nosso']);
 
 const STOP_WORDS = new Set(`sobre contra entre desde ainda mesmo todos todas apos durante segundo segue pode podem deve devem
   disse afirma veja saiba conheca entenda confira qual quais quando como mais menos muito muita maior menor primeiro primeira
   ultimo ultima novo nova novos novas sendo ficam pelo pela pelos pelas desta deste dessa esse essa isso esta este aqui entao
   caso casos pessoas anuncia brasil brasileiro brasileira brasileiros governo federal estado anos semana hoje ontem depois antes
   fazer feito quer quem onde porque diante tras final geral parte forma sobre nesta neste tambem alem cerca fala diz vira vai vao
-  ficar fica apenas depois novas dados grupo mundo nacional nossa nosso nossos nossas dele dela deles delas projeto projetos eleicao eleicoes milhoes milhao bilhoes bilhao mil reais real`.split(/\s+/));
+  ficar fica apenas depois novas dados grupo mundo nacional nossa nosso nossos nossas dele dela deles delas projeto projetos eleicao eleicoes milhoes milhao bilhoes bilhao mil reais real
+  vence venceu lanca lancou aprova aprovou anuncia anunciou divulga divulgou decide decidiu garante garantiu assume assumiu
+  confirma confirmou revela revelou apresenta apresentou mostra volta perde perdeu ganha ganhou define fecha abre chega deixa
+  entra sai explica explicam cresce caem sobe desce muda mudam ganham perdem aposta apostam modelo versao recursos recurso
+  nova novo novidade novidades para como suas seus numa umas uns pelos pelas`.split(/\s+/));
 
 export function generateTrends(items) {
   const since = Date.now() - 24 * HOUR;

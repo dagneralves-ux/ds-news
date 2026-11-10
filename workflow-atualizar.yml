@@ -18,6 +18,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0     # histórico completo: necessário para reaproveitar o commit do robô sem apagar o histórico
 
       - uses: actions/setup-node@v4
         with:
@@ -35,8 +37,12 @@ jobs:
           git add docs/data
           if git diff --cached --quiet; then
             echo "Sem mudanças."
+          elif [ "$(git log -1 --format=%an)" = "ds-news-bot" ]; then
+            # O último commit já é do robô: reaproveita esse commit em vez de criar mais um.
+            # Assim o histórico do repositório não cresce a cada 30 minutos (só com as suas edições).
+            git commit --amend --no-edit -q
+            git push --force-with-lease -q
           else
             git commit -m "Atualiza notícias"
-            git pull --rebase -q
             git push
           fi

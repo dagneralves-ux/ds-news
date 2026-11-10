@@ -24,38 +24,51 @@ export const CATEGORY_TERMS = {
   futebol: [
     'futebol', 'gol', 'gols', 'brasileirao', 'serie a', 'serie b', 'libertadores', 'sul americana',
     'copa do brasil', 'copa do mundo', 'selecao brasileira', 'cbf', 'fifa', 'champions league',
-    'premier league', 'la liga', 'rodada', 'zagueiro', 'goleiro', 'atacante', 'volante', 'escalacao',
-    'artilheiro', 'rebaixamento', 'penalti', 'var', 'neymar', 'ancelotti', 'campeonato paulista',
+    'premier league', 'la liga', 'zagueiro', 'goleiro', 'atacante',
+    'artilheiro', 'rebaixamento', 'penalti', 'neymar', 'ancelotti', 'campeonato paulista',
     'campeonato carioca', 'flamengo', 'palmeiras', 'corinthians', 'santos fc', 'vasco', 'fluminense',
     'botafogo', 'gremio', 'cruzeiro', 'atletico mg', 'ec bahia', 'fortaleza ec', 'sport recife',
     'ceara sc', 'coritiba', 'athletico', 'red bull bragantino', 'mirassol', 'sao paulo fc', 'inter de porto alegre',
-    'tecnico', 'torcida', 'clube', 'jogador', 'jogadores', 'partida', 'transferencia', 'mercado da bola',
+    'mercado da bola',
   ],
   politica: [
     'lula', 'bolsonaro', 'congresso', 'senado', 'senador', 'senadora', 'deputado', 'deputada',
-    'camara dos deputados', 'stf', 'tse', 'eleicao', 'eleicoes', 'partido', 'planalto', 'ministro',
-    'ministra', 'governo federal', 'prefeito', 'governador', 'governadora', 'pec', 'cpi', 'oposicao',
+    'camara dos deputados', 'stf', 'tse', 'eleicao', 'eleicoes', 'planalto', 'ministro',
+    'ministra', 'governo federal', 'prefeito', 'governador', 'governadora', 'cpi',
     'base aliada', 'centrao', 'alckmin', 'moraes', 'pgr', 'impeachment', 'reforma tributaria',
-    'politica', 'politico', 'politicos', 'votacao', 'projeto de lei', 'medida provisoria',
+    'politico', 'politicos', 'projeto de lei', 'medida provisoria',
   ],
   ia: [
-    'inteligencia artificial', 'chatgpt', 'openai', 'gemini', 'anthropic', 'llm', 'machine learning',
-    'aprendizado de maquina', 'ia generativa', 'copilot', 'deepseek', 'midjourney', 'grok', 'sora',
+    'inteligencia artificial', 'chatgpt', 'openai', 'anthropic', 'llm', 'machine learning',
+    'aprendizado de maquina', 'ia generativa', 'deepseek', 'midjourney',
     'modelo de linguagem', 'agentes de ia', 'rede neural', 'redes neurais', 'deep learning',
-    'nvidia', 'perplexity', 'stable diffusion', 'robo', 'robos', 'automacao',
+    'perplexity', 'stable diffusion',
   ],
   design: [
-    'design', 'designer', 'designers', 'design grafico', 'tipografia', 'logotipo', 'logomarca',
+    'design grafico', 'tipografia', 'logotipo', 'logomarca',
     'identidade visual', 'branding', 'ilustracao', 'ilustrador', 'figma', 'adobe', 'photoshop',
-    'illustrator', 'canva', 'ux', 'ui design', 'paleta de cores', 'cartaz', 'embalagem', 'packaging',
-    'motion design', 'arte digital', 'fontes gratuitas', 'mockup', 'criacao visual', 'diagramacao',
+    'illustrator', 'ui design',
+    'motion design', 'fontes gratuitas', 'diagramacao',
   ],
   marketing: [
-    'marketing', 'publicidade', 'propaganda', 'campanha', 'agencia de publicidade', 'social media',
-    'influenciador', 'influenciadores', 'influencer', 'seo', 'trafego pago', 'anuncios', 'ads',
-    'copywriting', 'consumidor', 'cannes lions', 'meta ads', 'google ads', 'e commerce', 'branding',
-    'marketing digital', 'marketing de conteudo', 'engajamento', 'conversao', 'lead', 'leads',
+    'marketing', 'publicidade', 'agencia de publicidade',
+    'influenciador', 'influenciadores', 'influencer', 'seo', 'trafego pago',
+    'copywriting', 'cannes lions', 'meta ads', 'google ads', 'e commerce',
+    'marketing digital', 'marketing de conteudo',
   ],
+};
+
+/**
+ * Termos ambíguos (também aparecem em assuntos que não são seus: "técnico" de informática,
+ * "partida" de viagem, "ads" em qualquer contexto...). Cada um vale meia pontuação:
+ * é preciso um termo forte, ou dois fracos, para a notícia entrar.
+ */
+export const WEAK_TERMS = {
+  futebol: ['var', 'tecnico', 'torcida', 'clube', 'jogador', 'jogadores', 'partida', 'transferencia', 'rodada', 'volante', 'escalacao'],
+  politica: ['partido', 'politica', 'votacao', 'oposicao', 'pec'],
+  ia: ['robo', 'robos', 'automacao', 'gemini', 'sora', 'grok', 'nvidia', 'copilot'],
+  design: ['design', 'designer', 'designers', 'ux', 'cartaz', 'embalagem', 'packaging', 'arte digital', 'paleta de cores', 'criacao visual', 'mockup', 'canva'],
+  marketing: ['ads', 'lead', 'leads', 'consumidor', 'campanha', 'anuncios', 'conversao', 'engajamento', 'social media', 'propaganda', 'branding'],
 };
 
 // Empate: a primeira da lista vence.
@@ -63,10 +76,12 @@ const CATEGORY_PRIORITY = ['politica', 'futebol', 'ia', 'marketing', 'design'];
 
 const compile = terms => terms.map(t => new RegExp(`(?:^| )${t}(?: |$)`));
 const _compiled = Object.fromEntries(Object.entries(CATEGORY_TERMS).map(([k, v]) => [k, compile(v)]));
+const _weak = Object.fromEntries(Object.entries(WEAK_TERMS).map(([k, v]) => [k, compile(v)]));
 
 function score(cat, text, raw) {
   let n = 0;
   for (const re of _compiled[cat]) if (re.test(text)) n += 1;
+  for (const re of _weak[cat] || []) if (re.test(text)) n += 0.5;
   // "IA" só conta em maiúsculas: em português "ia" também é o verbo "ir" (ele ia ao jogo).
   if (cat === 'ia' && /(^|[^A-Za-zÀ-ú])IA([^A-Za-zÀ-ú]|$)/.test(raw)) n += 2;
   return n;
