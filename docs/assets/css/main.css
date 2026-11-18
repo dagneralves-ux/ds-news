@@ -564,10 +564,12 @@ a.panel-also-row:hover { color: var(--accent); }
   .latest { display: flex; margin: 0 calc(var(--gutter) * -1); padding: 2px var(--gutter) 6px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
   .latest::-webkit-scrollbar { display: none; }
   .latest-item { flex: 0 0 min(280px, 78vw); scroll-snap-align: start; }
-  .mosaic { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: 190px; gap: 10px; }
-  .mosaic .tile:first-child { grid-row: auto; grid-column: span 2; min-height: 250px; }
-  .mosaic-4 .tile:last-child { grid-column: auto; }
-  .mosaic-1, .mosaic-2, .mosaic-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mosaic { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: 260px; grid-auto-rows: 210px; gap: 10px; }
+  .mosaic .tile:first-child { grid-row: auto; grid-column: span 2; min-height: 0; }
+  .mosaic .tile { min-height: 0; }
+  .mosaic-4 .tile:last-child { grid-column: span 2; }
+  .mosaic-1, .mosaic-2, .mosaic-3, .mosaic-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: 260px; }
+  .mosaic-1 .tile:first-child { grid-column: span 2; }
   .tile:first-child .tile-body strong { font-size: 20px; }
   .tile-body strong { font-size: 14px; }
   .feature-grid { grid-template-columns: 1fr; gap: 14px; }

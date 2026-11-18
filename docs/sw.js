@@ -1,6 +1,6 @@
 /* TabNews: service worker. Páginas e dados: rede primeiro (sempre a versão nova), cache como reserva. */
-const VERSION = 'temnews-v21-clima';
-const CORE = ['./', 'index.html', 'manifest.json', 'assets/css/main.css?v=21', 'assets/js/config.js?v=7', 'assets/js/api.js?v=10',
+const VERSION = 'temnews-v22-mosaico';
+const CORE = ['./', 'index.html', 'manifest.json', 'assets/css/main.css?v=23', 'assets/js/config.js?v=7', 'assets/js/api.js?v=10',
   'assets/js/favorites.js?v=6', 'assets/js/sync.js?v=1', 'assets/js/app.js?v=20', 'assets/js/pwa.js?v=2', 'icons/logo-tem.png?v=5', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
