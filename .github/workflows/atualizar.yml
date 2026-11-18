@@ -27,6 +27,7 @@ jobs:
         run: node scripts/atualizar.mjs
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
 
       - name: Salvar mudanças
         run: |
@@ -35,8 +36,15 @@ jobs:
           git add docs/data
           if git diff --cached --quiet; then
             echo "Sem mudanças."
-          else
-            git commit -m "Atualiza notícias"
-            git pull --rebase -q
-            git push
+            exit 0
           fi
+          git commit -m "Atualiza notícias"
+          for i in 1 2 3; do
+            if git pull --rebase -X theirs -q && git push; then
+              exit 0
+            fi
+            git rebase --abort 2>/dev/null || true
+            sleep 5
+          done
+          echo "Não consegui enviar depois de 3 tentativas."
+          exit 1
