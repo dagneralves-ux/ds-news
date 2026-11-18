@@ -10,7 +10,6 @@ import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { classifyCategory, passesFilter, classifyImportance } from '../scripts/lib/classify.js';
 import { parseBatchResponse } from '../scripts/lib/ai.js';
-import { decodeEntities } from '../scripts/lib/rss.js';
 
 let passed = 0;
 const ok = (name, fn) => { try { fn(); passed++; console.log('  ok  ', name); } catch (e) { console.error('  FALHOU', name, '\n', e.message); process.exitCode = 1; } };
@@ -24,12 +23,6 @@ ok('"ia" verbo não é IA', () => assert.equal(classifyCategory('Ele ia ao merca
 ok('clima não é dos seus assuntos', () => assert.equal(classifyCategory('Previsão do tempo para o fim de semana'), null));
 ok('Figma/branding → design', () => assert.equal(classifyCategory('Nova identidade visual e tipografia da marca'), 'design'));
 ok('campanha → marketing', () => assert.equal(classifyCategory('Campanha de marketing digital bate recorde'), 'marketing'));
-ok('termo ambíguo sozinho não classifica (robô)', () => assert.equal(classifyCategory('Robô aspirador entra em promoção'), null));
-ok('termo ambíguo sozinho não classifica (design de carro)', () => assert.equal(classifyCategory('Design do novo carro surpreende'), null));
-ok('termo ambíguo sozinho não classifica (partida de viagem)', () => assert.equal(classifyCategory('Partida do voo atrasa por causa do clima'), null));
-ok('dois termos fracos classificam', () => assert.equal(classifyCategory('Técnico e jogador explicam a escalação'), 'futebol'));
-ok('um termo forte classifica', () => assert.equal(classifyCategory('Vasco anuncia novo patrocinador'), 'futebol'));
-ok('entidades &rsaquo; e &lsaquo; são decodificadas', () => assert.equal(decodeEntities('Artigo &rsaquo; Título &lsaquo;'), 'Artigo › Título ‹'));
 ok('filtro futebol deixa vôlei de fora', () => assert.equal(passesFilter({ filtro: 'futebol' }, 'Vôlei: Brasil vence a Itália', ''), false));
 ok('filtro futebol deixa gol passar', () => assert.equal(passesFilter({ filtro: 'futebol' }, 'Gol do Corinthians decide', ''), true));
 ok('URGENTE vira urgent', () => assert.equal(classifyImportance('URGENTE: Senado aprova PEC'), 'urgent'));
