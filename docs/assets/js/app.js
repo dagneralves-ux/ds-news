@@ -506,6 +506,11 @@ function renderJogos(content) {
       'Para mostrar os jogos de hoje, crie a chave grátis da API-Football e salve no GitHub como API_FOOTBALL_KEY (veja o LEIA-ME).');
     return;
   }
+  if (j.erro) {
+    content.innerHTML = emptyStateHtml('⚠️', 'Não foi possível buscar os jogos',
+      `A API respondeu: ${j.erro}. Confira a chave API_FOOTBALL_KEY no GitHub e rode a atualização de novo.`);
+    return;
+  }
   const hoje = jogosDeHoje();
   if (!hoje) {
     content.innerHTML = emptyStateHtml('⚽', 'Sem jogos dos seus campeonatos hoje',

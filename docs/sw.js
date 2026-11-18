@@ -1,7 +1,7 @@
 /* TabNews: service worker. Páginas e dados: rede primeiro (sempre a versão nova), cache como reserva. */
 const VERSION = 'tabnews-v13-jogos';
 const CORE = ['./', 'index.html', 'manifest.json', 'assets/css/main.css?v=14', 'assets/js/config.js?v=6', 'assets/js/api.js?v=8',
-  'assets/js/favorites.js?v=6', 'assets/js/sync.js?v=1', 'assets/js/app.js?v=12', 'assets/js/pwa.js?v=2', 'assets/js/theme.js', 'icons/logo-tn.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png'];
+  'assets/js/favorites.js?v=6', 'assets/js/sync.js?v=1', 'assets/js/app.js?v=13', 'assets/js/pwa.js?v=2', 'assets/js/theme.js', 'icons/logo-tn.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));

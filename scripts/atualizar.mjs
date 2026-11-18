@@ -12,7 +12,7 @@ import { fetchAllFeeds, decodeEntities } from './lib/rss.js';
 import { summarizeItems } from './lib/ai.js';
 import { generateTrends } from './lib/trends.js';
 import { CATEGORIES } from './lib/categorias.js';
-import { buscarJogos } from './lib/jogos.js';
+import { buscarJogos, hojeSP } from './lib/jogos.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const FONTES_FILE = process.env.FONTES_FILE || join(ROOT, 'fontes.json');
@@ -87,19 +87,26 @@ async function main() {
     console.log('[Sem novidades] nada a gravar.');
   }
 
-  // Jogos de hoje (só roda com a chave API_FOOTBALL_KEY; se falhar, mantém o arquivo anterior)
-  if (env.API_FOOTBALL_KEY) {
+  // Jogos de hoje (só roda com a chave API_FOOTBALL_KEY; se falhar, mantém os jogos do dia já salvos)
+  if (!env.API_FOOTBALL_KEY) {
+    console.log('[Jogos] pulado: o secret API_FOOTBALL_KEY não chegou ao robô (confira o arquivo .github/workflows/atualizar.yml).');
+  } else {
+    const prevJogos = readJson(JOGOS_FILE, null);
     try {
       const { data, jogos } = await buscarJogos({ key: env.API_FOOTBALL_KEY });
-      const prevJogos = readJson(JOGOS_FILE, null);
-      if (!prevJogos || JSON.stringify({ data: prevJogos.data, jogos: prevJogos.jogos }) !== JSON.stringify({ data, jogos })) {
+      if (!prevJogos || JSON.stringify({ data: prevJogos.data, jogos: prevJogos.jogos }) !== JSON.stringify({ data, jogos }) || prevJogos.erro) {
         writeFileSync(JOGOS_FILE, JSON.stringify({ atualizadoEm: new Date().toISOString(), data, jogos }));
         console.log(`[Jogos] ${jogos.length} jogos em ${data}`);
       } else {
-        console.log('[Jogos] sem mudanças.');
+        console.log(`[Jogos] sem mudanças (${jogos.length} jogos em ${data}).`);
       }
     } catch (err) {
-      console.warn('[Jogos] aviso:', err.message);
+      console.warn('[Jogos] ERRO:', err.message);
+      const temHoje = prevJogos && !prevJogos.erro && prevJogos.data === hojeSP() && prevJogos.jogos?.length;
+      if (!temHoje && prevJogos?.erro !== err.message) {
+        // grava o motivo para o site mostrar na aba Jogos
+        writeFileSync(JOGOS_FILE, JSON.stringify({ atualizadoEm: new Date().toISOString(), data: hojeSP(), jogos: [], erro: String(err.message).slice(0, 200) }));
+      }
     }
   }
 
