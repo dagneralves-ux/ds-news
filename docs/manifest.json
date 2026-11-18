@@ -1,6 +1,6 @@
 {
-  "name": "TabNews",
-  "short_name": "TabNews",
+  "name": "Tem News",
+  "short_name": "Tem News",
   "description": "Seu radar pessoal de notícias brasileiras com resumos por IA",
   "start_url": "./",
   "scope": "./",

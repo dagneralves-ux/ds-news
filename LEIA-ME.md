@@ -113,3 +113,19 @@ Mostra horários, jogos em andamento e resultado final no painel do destaque e n
 **Como funciona:** o robô faz uma única chamada com todos os jogos do dia e guarda só os campeonatos de `config/campeonatos.json` (para incluir ou tirar campeonatos, edite esse arquivo; o `id` é o da API-Football). Sem a chave, o robô ignora os jogos e o site mostra o painel de editorias, como antes. Se a API falhar, o arquivo anterior é mantido.
 
 **Limite:** o placar é atualizado junto com as notícias (~30 min), então é "jogos de hoje e resultado final", não placar ao vivo. Teste: `node test/jogos.test.mjs`.
+
+## Visual 3.5 (Tem News)
+- Fundo branco, cinza e vermelho, com a logo Tem News. Não existe mais tema escuro.
+- Os escudos dos times são baixados pelo robô para `docs/data/escudos/` (o site não depende mais do servidor da API). Se um escudo falhar, aparecem as iniciais do time.
+- Nomes de times como "Gremio" e "Chapecoense-sc" são corrigidos pelo robô (lista em `scripts/lib/jogos.js`).
+
+## Melhorias de uso 3.6
+- Celular: botão **Jogos** no menu de baixo, com pontinho vermelho quando há jogo ao vivo (também nas abas e no menu lateral).
+- Voltar ao topo, deslizar o dedo no destaque para trocar de notícia, abas com indicação de rolagem e alvos de toque maiores.
+- Placar: o time vencedor fica em destaque. Link "Pular para o conteúdo" para teclado e leitores de tela.
+- Blocos sem foto ficam em cinza com um toque da cor da editoria, combinando com o branco/cinza/vermelho.
+
+## Versão 3.7
+- **Jogos:** partidas ao vivo aparecem em um cartão grande no topo da aba Jogos (placar, minuto, escudos). Sem jogo ao vivo, mostra o próximo jogo com contagem regressiva.
+- **Busca:** resultados na hora, termos em destaque, achados ordenados por relevância, jogos de hoje aparecem na busca (digite o nome do time), buscas recentes e assuntos em alta, setas do teclado para percorrer e Enter para abrir.
+- **Modo leitura:** botão "Modo leitura" dentro da notícia. Tela limpa, letra grande (A− / A+), barra de progresso, setas ← → para trocar de notícia e Esc para sair.

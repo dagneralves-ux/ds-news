@@ -81,10 +81,20 @@ const API = {
       case '/api/search': {
         const terms = this._norm(q.get('q') || '').split(' ').filter(t => t.length >= 2);
         if (!terms.length) return { ...out, items: [], total: 0 };
-        const found = items.filter(n => {
-          const hay = this._norm(`${n.title} ${n.summary || ''} ${n.source}`);
-          return terms.every(t => hay.includes(t));
-        });
+        // pontua: título vale mais que trecho/fonte; empata pela data (mais nova primeiro)
+        const found = items.map(n => {
+          const title = this._norm(n.title);
+          const rest = this._norm(`${n.summary || ''} ${n.source}`);
+          if (!terms.every(t => title.includes(t) || rest.includes(t))) return null;
+          let score = 0;
+          for (const t of terms) {
+            if (title.includes(t)) score += title.startsWith(t) || title.includes(' ' + t) ? 4 : 3;
+            else score += 1;
+          }
+          return { n, score };
+        }).filter(Boolean)
+          .sort((a, b) => b.score - a.score || new Date(b.n.date) - new Date(a.n.date))
+          .map(x => x.n);
         return { ...out, items: found.slice(0, 20), total: found.length };
       }
       default: {

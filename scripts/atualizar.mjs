@@ -12,7 +12,7 @@ import { fetchAllFeeds, decodeEntities } from './lib/rss.js';
 import { summarizeItems } from './lib/ai.js';
 import { generateTrends } from './lib/trends.js';
 import { CATEGORIES } from './lib/categorias.js';
-import { buscarJogos, hojeSP } from './lib/jogos.js';
+import { buscarJogos, hojeSP, localizarEscudos } from './lib/jogos.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const FONTES_FILE = process.env.FONTES_FILE || join(ROOT, 'fontes.json');
@@ -94,6 +94,12 @@ async function main() {
     const prevJogos = readJson(JOGOS_FILE, null);
     try {
       const { data, jogos } = await buscarJogos({ key: env.API_FOOTBALL_KEY });
+      const ESC = join(DATA_DIR, 'escudos');
+      mkdirSync(ESC, { recursive: true });
+      await localizarEscudos(jogos, ESC, {
+        existe: id => existsSync(join(ESC, `${id}.png`)),
+        gravar: (id, buf) => writeFileSync(join(ESC, `${id}.png`), buf),
+      });
       if (!prevJogos || JSON.stringify({ data: prevJogos.data, jogos: prevJogos.jogos }) !== JSON.stringify({ data, jogos }) || prevJogos.erro) {
         writeFileSync(JOGOS_FILE, JSON.stringify({ atualizadoEm: new Date().toISOString(), data, jogos }));
         console.log(`[Jogos] ${jogos.length} jogos em ${data}`);

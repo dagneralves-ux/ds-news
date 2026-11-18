@@ -30,6 +30,22 @@ const num = v => (Number.isFinite(Number(v)) && v !== null ? Number(v) : null);
 const url = v => (typeof v === 'string' && v.startsWith('https://') ? v : '');
 const txt = (v, max = 60) => String(v ?? '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, max);
 
+// Nomes que a API devolve sem acento ou com sufixo de estado; ajusta os mais comuns.
+const NOMES = {
+  'gremio': 'Grêmio', 'atletico paranaense': 'Athletico-PR', 'athletico paranaense': 'Athletico-PR',
+  'atletico-mg': 'Atlético-MG', 'atletico mineiro': 'Atlético-MG', 'atletico goianiense': 'Atlético-GO',
+  'sao paulo': 'São Paulo', 'vitoria': 'Vitória', 'ceara': 'Ceará', 'avai': 'Avaí', 'criciuma': 'Criciúma',
+  'goias': 'Goiás', 'america mineiro': 'América-MG', 'america-mg': 'América-MG', 'cuiaba': 'Cuiabá',
+  'botafogo rj': 'Botafogo', 'juventude': 'Juventude', 'chapecoense-sc': 'Chapecoense', 'chapecoense sc': 'Chapecoense',
+  'brusque': 'Brusque', 'sampaio correa': 'Sampaio Corrêa', 'operario-pr': 'Operário-PR', 'paysandu': 'Paysandu',
+  'bayern munich': 'Bayern de Munique', 'inter': 'Inter de Milão', 'ac milan': 'Milan', 'paris saint germain': 'PSG',
+  'paris saint-germain': 'PSG', 'real madrid': 'Real Madrid', 'barcelona': 'Barcelona',
+};
+const nome = v => {
+  const t = txt(v);
+  return NOMES[t.toLowerCase()] || t;
+};
+
 /** Converte a resposta da API no formato enxuto que o site usa. */
 export function normalizarJogos(resposta, campeonatos = CAMPEONATOS) {
   const ordem = new Map(campeonatos.map((c, i) => [c.id, i]));
@@ -49,8 +65,8 @@ export function normalizarJogos(resposta, campeonatos = CAMPEONATOS) {
         status: statusDe(short),
         statusTxt: short,
         minuto: num(j.fixture.status?.elapsed),
-        casa: { nome: txt(j.teams.home.name), logo: url(j.teams.home.logo) },
-        fora: { nome: txt(j.teams.away.name), logo: url(j.teams.away.logo) },
+        casa: { nome: nome(j.teams.home.name), logo: url(j.teams.home.logo) },
+        fora: { nome: nome(j.teams.away.name), logo: url(j.teams.away.logo) },
         golsCasa: num(j.goals?.home),
         golsFora: num(j.goals?.away),
         penaltis: j.score?.penalty?.home != null ? [num(j.score.penalty.home), num(j.score.penalty.away)] : undefined,
@@ -72,4 +88,39 @@ export async function buscarJogos({ key, data = hojeSP(), fetchImpl = fetch, cam
   const msg = Array.isArray(erros) ? erros.join('; ') : Object.values(erros || {}).join('; ');
   if (msg) throw new Error(`API recusou: ${msg}`);
   return { data, jogos: normalizarJogos(json, campeonatos) };
+}
+
+/**
+ * Baixa os escudos dos times para dentro do site (docs/data/escudos/ID.png).
+ * Assim o navegador não depende do servidor da API para mostrar as imagens.
+ * Se um download falhar, o escudo continua apontando para a URL original.
+ */
+export async function localizarEscudos(jogos, dir, { fetchImpl = fetch, existe, gravar } = {}) {
+  const feitos = new Map();
+  const baixar = async url => {
+    const m = /\/teams\/(\d+)\.png$/.exec(url || '');
+    if (!m) return url;
+    const rel = `data/escudos/${m[1]}.png`;
+    if (feitos.has(m[1])) return feitos.get(m[1]);
+    let saida = url;
+    try {
+      if (existe(m[1])) saida = rel;
+      else {
+        const r = await fetchImpl(url, { signal: AbortSignal.timeout(8000) });
+        const tipo = r.headers.get('content-type') || '';
+        const buf = Buffer.from(await r.arrayBuffer());
+        if (r.ok && tipo.startsWith('image/') && buf.length > 100 && buf.length < 200000) {
+          gravar(m[1], buf);
+          saida = rel;
+        }
+      }
+    } catch { /* mantém a URL original */ }
+    feitos.set(m[1], saida);
+    return saida;
+  };
+  for (const j of jogos) {
+    j.casa.logo = await baixar(j.casa.logo);
+    j.fora.logo = await baixar(j.fora.logo);
+  }
+  return jogos;
 }

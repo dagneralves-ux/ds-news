@@ -21,7 +21,7 @@ function safeUrl(url) {
 
 function safeImage(url) {
   const u = String(url || '').trim();
-  return u.startsWith('https://') ? u : '';
+  return u.startsWith('https://') || u.startsWith('data/escudos/') ? u : '';
 }
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -462,10 +462,30 @@ function jogoEstado(g) {
   return { cls: 'other', txt: JOGO_OUTRO[g.statusTxt] || 'Sem data' };
 }
 
+function teamInitials(t) {
+  const n = String(t.nome || '?').replace(/[-–].*$/, '').trim().split(/\s+/);
+  return (n.length > 1 ? n[0][0] + n[1][0] : n[0].slice(0, 2)).toUpperCase();
+}
+
 function teamLogo(t) {
   const src = safeImage(t.logo);
-  return src ? `<img class="team-logo" src="${escapeHtml(src)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<span class="team-logo team-logo-empty" aria-hidden="true"></span>';
+  const ini = escapeHtml(teamInitials(t));
+  if (!src) return `<span class="team-logo team-logo-empty" aria-hidden="true">${ini}</span>`;
+  // se o escudo não carregar, vira uma bolinha com as iniciais (ver listener 'error' em init)
+  return `<img class="team-logo" src="${escapeHtml(src)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-ini="${ini}">`;
 }
+
+// escudo que falhou ao carregar -> iniciais do time
+document.addEventListener('error', e => {
+  const el = e.target;
+  if (el && el.tagName === 'IMG' && el.classList.contains('team-logo')) {
+    const span = document.createElement('span');
+    span.className = 'team-logo team-logo-empty';
+    span.setAttribute('aria-hidden', 'true');
+    span.textContent = el.dataset.ini || '';
+    el.replaceWith(span);
+  }
+}, true);
 
 function gameHtml(g, { showLeague = true } = {}) {
   const st = jogoEstado(g);
@@ -474,6 +494,9 @@ function gameHtml(g, { showLeague = true } = {}) {
   const center = hasScore
     ? `<span class="game-score">${Number(g.golsCasa)}<i>×</i>${Number(g.golsFora)}${pen}</span>`
     : `<span class="game-score game-vs">×</span>`;
+  const fin = g.status === 'encerrado' && hasScore;
+  const wc = fin && g.golsCasa > g.golsFora ? ' game-win' : fin && g.golsCasa < g.golsFora ? ' game-lose' : '';
+  const wf = fin && g.golsFora > g.golsCasa ? ' game-win' : fin && g.golsFora < g.golsCasa ? ' game-lose' : '';
   return `
     <div class="game game-${st.cls}">
       <div class="game-meta">
@@ -481,11 +504,54 @@ function gameHtml(g, { showLeague = true } = {}) {
         <span class="game-state">${g.status === 'ao_vivo' ? '<b class="live-dot" aria-hidden="true"></b>' : ''}${escapeHtml(st.txt)}</span>
       </div>
       <div class="game-main">
-        <span class="game-team game-home"><span class="game-name">${escapeHtml(g.casa.nome)}</span>${teamLogo(g.casa)}</span>
+        <span class="game-team game-home${wc}"><span class="game-name">${escapeHtml(g.casa.nome)}</span>${teamLogo(g.casa)}</span>
         ${center}
-        <span class="game-team game-away">${teamLogo(g.fora)}<span class="game-name">${escapeHtml(g.fora.nome)}</span></span>
+        <span class="game-team game-away${wf}">${teamLogo(g.fora)}<span class="game-name">${escapeHtml(g.fora.nome)}</span></span>
       </div>
     </div>`;
+}
+
+// ── Destaque grande: jogos ao vivo ou o próximo jogo ─────────
+function contagemRegressiva(iso) {
+  const m = Math.round((new Date(iso) - Date.now()) / 60000);
+  if (m <= 1) return 'começa agora';
+  if (m < 60) return `começa em ${m} min`;
+  const h = Math.floor(m / 60), r = m % 60;
+  return `começa em ${h}h${r ? ` ${r}min` : ''}`;
+}
+
+function bigGameHtml(g, kind) {
+  const hasScore = g.golsCasa !== null && g.golsFora !== null;
+  const minuto = g.statusTxt === 'HT' ? 'Intervalo' : g.minuto ? `${Number(g.minuto)}'` : 'Em andamento';
+  const pill = kind === 'live'
+    ? `<span class="big-pill big-pill-live"><b class="live-dot" aria-hidden="true"></b>AO VIVO · ${escapeHtml(minuto)}</span>`
+    : `<span class="big-pill">${escapeHtml(contagemRegressiva(g.inicio))} · ${escapeHtml(formatHora(g.inicio))}</span>`;
+  const placar = kind === 'live' && hasScore
+    ? `<span class="big-score">${Number(g.golsCasa)}<i>×</i>${Number(g.golsFora)}</span>`
+    : '<span class="big-score big-vs">×</span>';
+  return `
+    <article class="big-game${kind === 'live' ? ' is-live' : ''}">
+      <div class="big-head"><span class="big-liga">${escapeHtml(g.liga)}${g.rodada ? ` · ${escapeHtml(g.rodada)}` : ''}</span>${pill}</div>
+      <div class="big-main">
+        <div class="big-team">${teamLogo(g.casa)}<strong>${escapeHtml(g.casa.nome)}</strong></div>
+        ${placar}
+        <div class="big-team">${teamLogo(g.fora)}<strong>${escapeHtml(g.fora.nome)}</strong></div>
+      </div>
+    </article>`;
+}
+
+function featuredGamesHtml(jogos) {
+  const live = jogos.filter(g => g.status === 'ao_vivo');
+  if (live.length) {
+    return `<section class="big-games" aria-label="Jogos ao vivo agora">
+      <h3 class="big-title"><b class="live-dot" aria-hidden="true"></b>Ao vivo agora</h3>
+      <div class="big-grid">${live.slice(0, 4).map(g => bigGameHtml(g, 'live')).join('')}</div></section>`;
+  }
+  const next = jogos.filter(g => g.status === 'agendado' && new Date(g.inicio) > Date.now() - 5 * 60000)
+    .sort((a, b) => new Date(a.inicio) - new Date(b.inicio))[0];
+  return next
+    ? `<section class="big-games" aria-label="Próximo jogo"><h3 class="big-title">Próximo jogo</h3><div class="big-grid">${bigGameHtml(next, 'next')}</div></section>`
+    : '';
 }
 
 function gamesPanelHtml(j) {
@@ -537,12 +603,14 @@ function renderJogos(content) {
       <h3 class="section-title">Jogos de hoje <span class="section-count">${hoje.jogos.length}</span></h3>
     </div>
     <p class="games-note">${escapeHtml(dia)} · atualizado às ${escapeHtml(formatHora(hoje.atualizadoEm))}. Os placares são atualizados pelo robô a cada ~30 minutos, então podem ter pequeno atraso.</p>
+    ${featuredGamesHtml(hoje.jogos.filter(g => State.jogosLeague === 'all' || String(g.ligaId) === State.jogosLeague))}
     <div class="filters-bar games-filters" aria-label="Filtrar por campeonato">${chips}</div>
     ${groups}`;
 }
 
 async function loadJogos() {
   State.jogos = await API.jogos();
+  markLive();
   const view = currentView();
   if (view === 'home' || view === 'jogos') render();
 }
@@ -554,6 +622,41 @@ function updateTopTrend(trends) {
   const t = trends?.[0];
   wrap.hidden = !t;
   if (t) { btn.textContent = t.title; btn.dataset.q = t.title; }
+}
+
+// Pontinho vermelho em "Jogos" quando há partida em andamento
+function markLive() {
+  const live = !!State.jogos?.jogos?.some(g => g.status === 'ao_vivo');
+  $$('[data-value="jogos"]').forEach(el => el.classList.toggle('has-live', live));
+}
+
+// Botão "voltar ao topo"
+function initToTop() {
+  const btn = $('#toTop');
+  if (!btn) return;
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => { btn.classList.toggle('show', window.scrollY > 900); ticking = false; });
+  }, { passive: true });
+  btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+}
+
+// Deslizar o dedo no destaque troca de notícia
+function initHeroSwipe() {
+  let x0 = null, y0 = 0;
+  document.addEventListener('touchstart', e => {
+    const hero = e.target.closest && e.target.closest('#hero');
+    if (!hero) { x0 = null; return; }
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener('touchend', e => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+    x0 = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) { heroGo(heroIndex + (dx < 0 ? 1 : -1)); heroStart(); }
+  }, { passive: true });
 }
 
 // ── Carrossel do destaque ────────────────────────────────────
@@ -664,12 +767,13 @@ function updateChrome() {
   });
   $$('.mobile-nav-item').forEach(el => {
     const active = el.dataset.navGroup === 'categories'
-      ? !['all', 'favorites', 'history'].includes(State.category)
+      ? !['all', 'favorites', 'history', 'jogos'].includes(State.category)
       : el.dataset.value === State.category;
     el.classList.toggle('active', active);
     if (active) el.setAttribute('aria-current', 'page');
     else el.removeAttribute('aria-current');
   });
+  markLive();
   $$('.filter-btn').forEach(el => el.classList.toggle('active', el.dataset.value === State.filter));
   $$('[data-action="go-filter"]').forEach(el =>
     el.classList.toggle('active', State.category === 'all' && State.filter === el.dataset.value));
@@ -692,7 +796,7 @@ function updateChrome() {
   if (topUpdated) topUpdated.textContent = lastUpdated ? `Atualizado ${formatDateTime(lastUpdated)}` : 'Buscar atualizações';
 
   const label = { all: null, favorites: 'Favoritos', history: 'Histórico', jogos: 'Jogos de hoje' }[State.category] ?? categoryOf(State.category).label;
-  document.title = label ? `${label} | TabNews` : 'TabNews | Futebol, política, IA, design e marketing';
+  document.title = label ? `${label} | Tem News` : 'Tem News | Futebol, política, IA, design e marketing';
 }
 
 function applyMeta(data) {
@@ -950,6 +1054,7 @@ function panelHtml(item) {
       ${also}
       <div class="panel-actions">
         ${link ? `<a class="btn-primary" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" data-action="read" data-id="${id}">Ler matéria original</a>` : ''}
+        <button type="button" class="btn-ghost" data-action="open-reader" data-id="${id}">Modo leitura</button>
         <button type="button" class="btn-ghost ${isFav ? 'active' : ''}" id="panel-fav" data-action="favorite" data-id="${id}" aria-pressed="${isFav}">${isFav ? 'Salvo nos favoritos' : 'Salvar nos favoritos'}</button>
         <button type="button" class="btn-ghost" data-action="share" data-id="${id}">Compartilhar</button>
       </div>
@@ -961,7 +1066,7 @@ function openPanel(id) {
   const item = findItem(id);
   if (!item) return;
   const trigger = document.activeElement;
-  if (State.searchOpen) closeSearch();
+  if (State.searchOpen) { saveRecent(State.lastQuery); closeSearch(); }
   State.panelTrigger = trigger;
   State.panelId = id;
   markRead(id);
@@ -971,6 +1076,107 @@ function openPanel(id) {
   $('#newsPanel').setAttribute('aria-hidden', 'false');
   $('#panelContent').scrollTop = 0;
   $('#panelClose').focus({ preventScroll: true });
+}
+
+// ── Modo de leitura (tela limpa, letra grande) ───────────────
+const READER_SIZES = [17, 19, 21, 24];
+
+function readerSize() {
+  let n = 1;
+  try { n = Number(localStorage.getItem('tn_reader_size') ?? 1); } catch { /* ignore */ }
+  return Math.min(READER_SIZES.length - 1, Math.max(0, Number.isFinite(n) ? n : 1));
+}
+
+function readerIds() {
+  const ids = [];
+  $$('#mainContent [data-action="open-panel"][data-id]').forEach(el => { if (!ids.includes(el.dataset.id)) ids.push(el.dataset.id); });
+  return ids;
+}
+
+function readerHtml(item) {
+  const cat = categoryOf(item.category);
+  const link = safeUrl(item.link);
+  const ai = item.aiSummary;
+  const points = Array.isArray(ai?.points) && ai.points.length
+    ? '<ul class="reader-points">' + ai.points.map(p => `<li>${escapeHtml(p)}</li>`).join('') + '</ul>' : '';
+  const image = safeImage(item.image);
+  return `
+    <div class="reader-meta"><span class="reader-cat">${escapeHtml(cat.label)}</span><span>${escapeHtml(item.source)}</span><time>${escapeHtml(formatDateTime(item.date))}</time></div>
+    <h1 class="reader-title">${escapeHtml(item.title)}</h1>
+    ${image ? `<img class="reader-img" src="${escapeHtml(image)}" alt="" referrerpolicy="no-referrer">` : ''}
+    ${item.summary ? `<p class="reader-text">${escapeHtml(item.summary)}</p>` : ''}
+    ${ai && (ai.summary || points) ? `<div class="reader-ai"><div class="reader-ai-label">Resumo por IA</div>${ai.summary ? `<p>${escapeHtml(ai.summary)}</p>` : ''}${points}</div>` : ''}
+    ${item.also?.length ? `<p class="reader-also">Também publicado em: ${item.also.map(a => escapeHtml(a.source)).join(', ')}</p>` : ''}
+    <div class="reader-actions">
+      ${link ? `<a class="btn-primary btn-lg" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" data-action="read" data-id="${escapeHtml(item.id)}">Ler matéria original</a>` : ''}
+      <button type="button" class="btn-ghost" data-action="share" data-id="${escapeHtml(item.id)}">Compartilhar</button>
+    </div>
+    <p class="reader-note">O resumo usa só o título e o trecho publicados pela fonte. Confira a matéria original.</p>`;
+}
+
+function renderReader() {
+  const item = findItem(State.readerId);
+  if (!item) return closeReader();
+  const box = $('#reader');
+  box.style.setProperty('--reader-size', READER_SIZES[readerSize()] + 'px');
+  $('#readerBody').innerHTML = readerHtml(item);
+  const ids = readerIds(), pos = ids.indexOf(State.readerId);
+  $('#readerPos').textContent = pos >= 0 ? `${pos + 1} de ${ids.length}` : '';
+  $('[data-action="reader-prev"]').disabled = pos <= 0;
+  $('[data-action="reader-next"]').disabled = pos < 0 || pos >= ids.length - 1;
+  box.scrollTop = 0;
+  box.style.setProperty('--p', '0%');
+}
+
+function openReader(id) {
+  if (!findItem(id)) return;
+  const trigger = State.panelTrigger || document.activeElement;
+  closePanel();
+  State.readerTrigger = trigger;
+  State.readerId = id;
+  markRead(id);
+  const box = $('#reader');
+  box.classList.add('open');
+  box.setAttribute('aria-hidden', 'false');
+  document.documentElement.classList.add('no-scroll');
+  renderReader();
+  $('[data-action="close-reader"]').focus({ preventScroll: true });
+}
+
+function closeReader() {
+  if (!State.readerId) return;
+  State.readerId = null;
+  const box = $('#reader');
+  box.classList.remove('open');
+  box.setAttribute('aria-hidden', 'true');
+  document.documentElement.classList.remove('no-scroll');
+  const t = State.readerTrigger;
+  State.readerTrigger = null;
+  if (t?.isConnected) t.focus({ preventScroll: true });
+}
+
+function readerNav(dir) {
+  const ids = readerIds(), pos = ids.indexOf(State.readerId);
+  const next = ids[pos + dir];
+  if (pos < 0 || !next) return;
+  State.readerId = next;
+  markRead(next);
+  renderReader();
+}
+
+function readerFont(delta) {
+  const n = Math.min(READER_SIZES.length - 1, Math.max(0, readerSize() + delta));
+  try { localStorage.setItem('tn_reader_size', String(n)); } catch { /* ignore */ }
+  if (State.readerId) $('#reader').style.setProperty('--reader-size', READER_SIZES[n] + 'px');
+}
+
+function initReader() {
+  const box = $('#reader');
+  if (!box) return;
+  box.addEventListener('scroll', () => {
+    const max = box.scrollHeight - box.clientHeight;
+    box.style.setProperty('--p', max > 0 ? Math.min(100, (box.scrollTop / max) * 100).toFixed(1) + '%' : '0%');
+  }, { passive: true });
 }
 
 function closePanel() {
@@ -991,25 +1197,6 @@ function refreshPanelFav() {
   btn.classList.toggle('active', on);
   btn.setAttribute('aria-pressed', String(on));
   btn.textContent = on ? 'Salvo nos favoritos' : 'Salvar nos favoritos';
-}
-
-// ── Tema (claro/escuro) ──────────────────────────────────────
-function toggleTheme() {
-  const root = document.documentElement;
-  const dark = root.dataset.theme
-    ? root.dataset.theme === 'dark'
-    : window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const next = dark ? 'light' : 'dark';
-  root.dataset.theme = next;
-  try { localStorage.setItem('ds_theme', next); } catch { /* ignore */ }
-  document.querySelectorAll('meta[name="theme-color"]').forEach(meta => {
-    meta.setAttribute('content', next === 'dark' ? '#0a1122' : '#ffffff');
-  });
-  const themeLabel = next === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro';
-  ['#btnTheme', '#btnThemeTop'].forEach(sel => {
-    const b = $(sel);
-    if (b) { b.setAttribute('aria-label', themeLabel); b.setAttribute('title', themeLabel); }
-  });
 }
 
 // ── Busca ────────────────────────────────────────────────────
@@ -1036,9 +1223,80 @@ function closeSearch() {
   if (trigger?.isConnected) trigger.focus({ preventScroll: true });
 }
 
+// ── Busca: realce, recentes, atalhos e jogos ─────────────────
+const RECENT_KEY = 'tn_recent_q';
+function recentQueries() {
+  try { const r = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); return Array.isArray(r) ? r.slice(0, 5) : []; } catch { return []; }
+}
+function saveRecent(q) {
+  q = String(q || '').trim();
+  if (q.length < 2) return;
+  const list = [q, ...recentQueries().filter(x => x.toLowerCase() !== q.toLowerCase())].slice(0, 5);
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify(list)); } catch { /* ignore */ }
+}
+function clearRecent() { try { localStorage.removeItem(RECENT_KEY); } catch { /* ignore */ } }
+
+function normChar(c) {
+  const n = c.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  return /^[a-z0-9]$/.test(n) ? n : ' ';
+}
+
+/** Escapa o texto e marca os termos buscados (sem diferenciar acento nem maiúscula). */
+function highlight(text, terms) {
+  const str = String(text ?? '');
+  const norm = [...str].map(normChar).join('');
+  if ([...str].length !== norm.length) return escapeHtml(str);
+  const mark = new Array(norm.length).fill(false);
+  for (const t of terms) {
+    if (t.length < 2) continue;
+    let at = norm.indexOf(t);
+    while (at !== -1) { for (let k = at; k < at + t.length; k++) mark[k] = true; at = norm.indexOf(t, at + t.length); }
+  }
+  let out = '', open = false;
+  [...str].forEach((ch, i) => {
+    if (mark[i] && !open) { out += '<mark>'; open = true; }
+    if (!mark[i] && open) { out += '</mark>'; open = false; }
+    out += escapeHtml(ch);
+  });
+  return out + (open ? '</mark>' : '');
+}
+
+function searchTerms(q) {
+  return [...q].map(normChar).join('').split(' ').filter(t => t.length >= 2);
+}
+
+function gameMatches(q) {
+  const terms = searchTerms(q);
+  const j = jogosDeHoje();
+  if (!terms.length || !j) return [];
+  return j.jogos.filter(g => {
+    const hay = [...`${g.casa.nome} ${g.fora.nome}`].map(normChar).join('');
+    return terms.every(t => hay.includes(t));
+  }).slice(0, 3);
+}
+
+function searchGamesHtml(list, terms) {
+  if (!list.length) return '';
+  return `<div class="search-group-label">Jogos de hoje</div>` + list.map(g => {
+    const st = jogoEstado(g);
+    const placar = g.golsCasa !== null && g.status !== 'agendado' ? ` ${Number(g.golsCasa)} × ${Number(g.golsFora)}` : '';
+    return `<button type="button" class="search-result-item search-game" data-action="search-jogos">
+      <div class="search-result-icon">⚽</div>
+      <div class="search-result-body">
+        <div class="search-result-title">${highlight(g.casa.nome, terms)}${placar || ' ×'} ${highlight(g.fora.nome, terms)}</div>
+        <div class="search-result-meta">${escapeHtml(g.liga)} · ${escapeHtml(st.txt)}</div>
+      </div></button>`;
+  }).join('') + '<div class="search-group-label">Notícias</div>';
+}
+
 function renderSearchHint() {
-  $('#searchResults').innerHTML = `
-    <div class="search-empty">Digite para buscar em todas as editorias</div>`;
+  const rec = recentQueries();
+  const trends = (State.home?.trends || []).slice(0, 5);
+  const chip = (q, cls = '') => `<button type="button" class="search-chip ${cls}" data-action="search-q" data-q="${escapeHtml(q)}">${escapeHtml(q)}</button>`;
+  let html = '';
+  if (rec.length) html += `<div class="search-group-label">Buscas recentes <button type="button" class="search-clear" data-action="search-clear">Limpar</button></div><div class="search-chips">${rec.map(q => chip(q)).join('')}</div>`;
+  if (trends.length) html += `<div class="search-group-label">Em alta agora</div><div class="search-chips">${trends.map(t => chip(t.title, 'hot')).join('')}</div>`;
+  $('#searchResults').innerHTML = html || '<div class="search-empty">Digite para buscar em todas as editorias</div>';
 }
 
 let searchTimer;
@@ -1048,13 +1306,14 @@ function handleSearchInput(e) {
   clearTimeout(searchTimer);
   const q = e.target.value.trim();
   if (q.length < 2) { searchReq++; renderSearchHint(); return; }
-  searchTimer = setTimeout(() => performSearch(q), 300);
+  searchTimer = setTimeout(() => performSearch(q), 80);
 }
 
 async function performSearch(q) {
   const el = $('#searchResults');
   const req = ++searchReq;
-  el.innerHTML = '<div class="search-empty">Buscando…</div>';
+  State.lastQuery = q;
+  const terms = searchTerms(q);
 
   let results;
   try {
@@ -1066,19 +1325,20 @@ async function performSearch(q) {
   }
   if (req !== searchReq) return;
 
-  if (!results.length) {
+  const gamesList = gameMatches(q);
+  if (!results.length && !gamesList.length) {
     el.innerHTML = `<div class="search-empty">Nenhum resultado para "${escapeHtml(q)}"</div>`;
     return;
   }
   remember(results);
-  el.innerHTML = results.slice(0, 10).map(n => {
+  el.innerHTML = searchGamesHtml(gamesList, terms) + results.slice(0, 10).map(n => {
     const cat = categoryOf(n.category);
     const link = safeUrl(n.link);
     return `
       <a class="search-result-item" href="${escapeHtml(link || '#')}" ${link ? 'target="_blank" rel="noopener noreferrer"' : ''} data-action="open-panel" data-id="${escapeHtml(n.id)}">
         <div class="search-result-icon"><span class="nav-icon" style="background:${escapeHtml(cat.color)}"></span></div>
         <div class="search-result-body">
-          <div class="search-result-title">${escapeHtml(n.title)}</div>
+          <div class="search-result-title">${highlight(n.title, terms)}</div>
           <div class="search-result-meta" style="color:${escapeHtml(cat.color)}">${escapeHtml(cat.label)} · ${escapeHtml(n.source)} · ${escapeHtml(formatRelativeDate(n.date))}</div>
         </div>
       </a>`;
@@ -1124,8 +1384,15 @@ function handleClick(e) {
     case 'toggle-ai':     toggleAI(el, id); break;
     case 'read':          markRead(id); if (State.searchOpen) closeSearch(); return;   // deixa o link abrir
     case 'trend':         openSearch(); $('#searchInput').value = el.dataset.q; performSearch(el.dataset.q); break;
-    case 'theme':         toggleTheme(); break;
     case 'view':          setView(value); break;
+    case 'search-q':      { const inp = $('#searchInput'); inp.value = el.dataset.q; performSearch(el.dataset.q); inp.focus(); break; }
+    case 'search-clear':  clearRecent(); renderSearchHint(); break;
+    case 'search-jogos':  saveRecent(State.lastQuery); closeSearch(); go('jogos'); break;
+    case 'open-reader':   openReader(id); break;
+    case 'close-reader':  closeReader(); break;
+    case 'reader-prev':   readerNav(-1); break;
+    case 'reader-next':   readerNav(1); break;
+    case 'reader-font':   readerFont(Number(value)); break;
     case 'open-search':   openSearch(); break;
     case 'close-search':  closeSearch(); break;
     case 'open-sidebar':  openSidebar(); break;
@@ -1149,13 +1416,29 @@ function handleKeydown(e) {
   }
   if (e.key === 'Escape') {
     if (State.searchOpen) closeSearch();
+    else if (State.readerId) closeReader();
     else if (State.panelId) closePanel();
     if (State.sidebarOpen) closeSidebar();
   }
 
+  // Leitura: setas trocam de notícia
+  if (State.readerId && !State.searchOpen && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
+    e.preventDefault();
+    readerNav(e.key === 'ArrowRight' ? 1 : -1);
+  }
+
+  // Busca: setas percorrem os resultados e Enter abre o primeiro
+  if (State.searchOpen) {
+    const items = $$('#searchResults .search-result-item');
+    const at = items.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown' && items.length) { e.preventDefault(); items[Math.min(items.length - 1, at + 1)].focus(); }
+    else if (e.key === 'ArrowUp' && at >= 0) { e.preventDefault(); (at === 0 ? $('#searchInput') : items[at - 1]).focus(); }
+    else if (e.key === 'Enter' && e.target?.id === 'searchInput' && items.length) { e.preventDefault(); items[0].click(); }
+  }
+
   // Keep keyboard focus inside the active dialog until it is dismissed.
-  if (e.key === 'Tab' && (State.searchOpen || State.panelId)) {
-    const dialog = State.searchOpen ? $('#searchOverlay') : $('#newsPanel');
+  if (e.key === 'Tab' && (State.searchOpen || State.panelId || State.readerId)) {
+    const dialog = State.searchOpen ? $('#searchOverlay') : State.readerId ? $('#reader') : $('#newsPanel');
     const focusable = [...dialog.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])')]
       .filter(el => el.getClientRects().length > 0);
     if (!focusable.length) return;
@@ -1224,16 +1507,10 @@ async function init() {
     topDate.textContent = small ? date : `${getGreeting()}, Dagner · ${date}`;
   }
   $('#searchShortcut').textContent = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K';
-  const initialDark = document.documentElement.dataset.theme
-    ? document.documentElement.dataset.theme === 'dark'
-    : window.matchMedia('(prefers-color-scheme: dark)').matches;
-  ['#btnTheme', '#btnThemeTop'].forEach(sel => {
-    const b = $(sel);
-    if (!b) return;
-    b.setAttribute('aria-label', initialDark ? 'Ativar tema claro' : 'Ativar tema escuro');
-    b.setAttribute('title', initialDark ? 'Ativar tema claro' : 'Ativar tema escuro');
-  });
 
+  initToTop();
+  initReader();
+  initHeroSwipe();
   document.addEventListener('click', handleClick);
   document.addEventListener('keydown', handleKeydown);
   $('#searchInput').addEventListener('input', handleSearchInput);
