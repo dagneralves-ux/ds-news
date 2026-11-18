@@ -28,7 +28,11 @@ const API = {
       catch { const err = new Error('invalid'); err.code = 'invalid'; throw err; }
       if (!json || !Array.isArray(json.itens)) { const err = new Error('invalid'); err.code = 'invalid'; throw err; }
 
+      // se o robô tirou uma editoria, ela some também aqui
+      Object.keys(CATEGORIES).forEach(k => { if (k !== 'all' && json.categorias && !json.categorias[k]) delete CATEGORIES[k]; });
       Object.entries(json.categorias || {}).forEach(([key, c]) => { CATEGORIES[key] = c; });
+      ASSUNTOS.length = 0;
+      (json.assuntos || []).forEach(a => ASSUNTOS.push(a));
       json.itens.sort((a, b) => new Date(b.date) - new Date(a.date));
       json.itens = clusterItems(json.itens);
       this._data = json;
@@ -68,13 +72,24 @@ const API = {
 
     switch (url.pathname) {
       case '/api/home': return { ...out, ...this._home(items, data) };
+      case '/api/topics': {
+        // assuntos da editoria, com quantas notícias cada um tem (só os que têm alguma)
+        const category = q.get('category') || 'all';
+        const base = category === 'all' ? items : items.filter(n => n.category === category);
+        const list = ASSUNTOS.filter(a => category === 'all' || a.categoria === category)
+          .map(a => ({ id: a.id, label: a.label, n: base.filter(n => Array.isArray(n.topics) && n.topics.includes(a.id)).length }))
+          .filter(a => a.n > 0);
+        return { ...out, topics: list };
+      }
       case '/api/dashboard': return { ...out, ...this._counts(items), lastUpdated: data.atualizadoEm };
       case '/api/news': {
         const category = q.get('category') || 'all';
         const filter = q.get('filter') || 'all';
         const page = Math.max(1, parseInt(q.get('page'), 10) || 1);
         const limit = Math.min(50, Math.max(1, parseInt(q.get('limit'), 10) || 24));
+        const topic = q.get('topic') || 'all';
         let list = category === 'all' ? items : items.filter(n => n.category === category);
+        if (topic !== 'all') list = list.filter(n => Array.isArray(n.topics) && n.topics.includes(topic));
         list = this._filter(list, filter);
         return { ...out, items: list.slice((page - 1) * limit, page * limit), total: list.length, page, limit, hasMore: page * limit < list.length };
       }

@@ -152,78 +152,12 @@
     "verificada": false
   },
   {
-    "id": "exame-ia",
+    "id": "exame-economia",
     "name": "Exame",
     "url": "https://exame.com/feed/",
-    "category": "ia",
-    "verificada": false
-  },
-  {
-    "id": "designerd",
-    "name": "Designerd",
-    "url": "https://designerd.com.br/feed/",
-    "category": "design",
-    "verificada": true
-  },
-  {
-    "id": "zupi",
-    "name": "Zupi",
-    "url": "https://zupi.com.br/feed/",
-    "category": "design",
+    "category": "economia",
     "verificada": false,
-    "htmlFallback": true
-  },
-  {
-    "id": "b9",
-    "name": "Brainstorm9",
-    "url": "https://www.b9.com.br/feed/",
-    "category": "geral",
-    "verificada": false
-  },
-  {
-    "id": "meioemensagem",
-    "name": "Meio & Mensagem",
-    "url": "https://www.meioemensagem.com.br/feed",
-    "category": "marketing",
-    "verificada": true
-  },
-  {
-    "id": "propmark",
-    "name": "Propmark",
-    "url": "https://propmark.com.br/feed/",
-    "category": "marketing",
-    "verificada": false
-  },
-  {
-    "id": "adnews",
-    "name": "Adnews",
-    "url": "https://adnews.com.br/feed/",
-    "category": "marketing",
-    "verificada": false
-  },
-  {
-    "id": "mundodomarketing",
-    "name": "Mundo do Marketing",
-    "url": "https://mundodomarketing.com.br/feed-rss",
-    "category": "marketing",
-    "verificada": false,
-    "htmlFallback": true
-  },
-  {
-    "id": "rockcontent",
-    "name": "Rock Content",
-    "url": "https://rockcontent.com/br/blog/feed/",
-    "category": "marketing",
-    "verificada": false,
-    "htmlFallback": true
-  },
-  {
-    "id": "neilpatel",
-    "name": "Neil Patel Brasil",
-    "url": "https://neilpatel.com/br/blog/",
-    "category": "marketing",
-    "verificada": false,
-    "htmlFallback": true
+    "filtro": "economia"
   },
   {
     "id": "g1-politica",
@@ -242,17 +176,103 @@
     "verificada": false
   },
   {
-    "id": "ecommercebrasil",
-    "name": "E-Commerce Brasil",
-    "url": "https://www.ecommercebrasil.com.br/feed/rss/",
-    "category": "marketing",
-    "verificada": false
-  },
-  {
     "id": "bbc-brasil",
     "name": "BBC News Brasil",
     "url": "https://feeds.bbci.co.uk/portuguese/rss.xml",
     "category": "geral",
+    "verificada": false
+  },
+  {
+    "id": "ab-economia",
+    "name": "Agência Brasil Economia",
+    "url": "https://agenciabrasil.ebc.com.br/rss/economia/feed.xml",
+    "category": "economia",
+    "verificada": true
+  },
+  {
+    "id": "infomoney-economia",
+    "name": "InfoMoney Economia",
+    "url": "https://www.infomoney.com.br/economia/feed/",
+    "category": "economia",
+    "verificada": true
+  },
+  {
+    "id": "infomoney-mercados",
+    "name": "InfoMoney Mercados",
+    "url": "https://www.infomoney.com.br/mercados/feed/",
+    "category": "economia",
+    "verificada": true
+  },
+  {
+    "id": "g1-economia",
+    "name": "g1 Economia",
+    "url": "https://g1.globo.com/rss/g1/economia/",
+    "category": "economia",
+    "verificada": false
+  },
+  {
+    "id": "folha-mercado",
+    "name": "Folha Mercado",
+    "url": "https://feeds.folha.uol.com.br/mercado/rss091.xml",
+    "category": "economia",
+    "verificada": false
+  },
+  {
+    "id": "cnn-economia",
+    "name": "CNN Brasil Economia",
+    "url": "https://www.cnnbrasil.com.br/economia/feed/",
+    "category": "economia",
+    "verificada": false
+  },
+  {
+    "id": "poder360-economia",
+    "name": "Poder360 Economia",
+    "url": "https://www.poder360.com.br/economia/feed/",
+    "category": "economia",
+    "filtro": "economia",
+    "verificada": false
+  },
+  {
+    "id": "moneytimes",
+    "name": "Money Times",
+    "url": "https://www.moneytimes.com.br/feed/",
+    "category": "economia",
+    "filtro": "economia",
+    "verificada": false
+  },
+  {
+    "id": "github-blog",
+    "name": "GitHub Blog",
+    "url": "https://github.blog/feed/",
+    "category": "ia",
+    "verificada": true
+  },
+  {
+    "id": "adobe-blog",
+    "name": "Adobe Blog",
+    "url": "https://blog.adobe.com/en/feed",
+    "category": "ia",
+    "verificada": false
+  },
+  {
+    "id": "adobe-dev",
+    "name": "Adobe Developers",
+    "url": "https://blog.developer.adobe.com/rss.xml",
+    "category": "ia",
+    "verificada": true
+  },
+  {
+    "id": "coreldraw-blog",
+    "name": "CorelDRAW Blog",
+    "url": "https://www.coreldraw.com/en/blog/feed/",
+    "category": "ia",
+    "verificada": false
+  },
+  {
+    "id": "figma-blog",
+    "name": "Figma Blog",
+    "url": "https://www.figma.com/blog/feed/atom.xml",
+    "category": "ia",
     "verificada": false
   }
 ]

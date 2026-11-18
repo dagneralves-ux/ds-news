@@ -21,6 +21,9 @@ const CATEGORIES = {
   all: { label: 'Todas', icon: '📰', color: '#7c84f0' },
 };
 
+// Assuntos dentro de cada editoria (Adobe, GitHub, Selic...). Preenchido por api.js.
+const ASSUNTOS = [];
+
 // Só urgente e destaque ganham selo; o resto é notícia comum.
 const IMPORTANCE = {
   urgent: { label: 'Urgente',  emoji: '🚨', cls: 'badge-urgent' },

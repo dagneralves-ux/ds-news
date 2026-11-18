@@ -129,3 +129,9 @@ Mostra horários, jogos em andamento e resultado final no painel do destaque e n
 - **Jogos:** partidas ao vivo aparecem em um cartão grande no topo da aba Jogos (placar, minuto, escudos). Sem jogo ao vivo, mostra o próximo jogo com contagem regressiva.
 - **Busca:** resultados na hora, termos em destaque, achados ordenados por relevância, jogos de hoje aparecem na busca (digite o nome do time), buscas recentes e assuntos em alta, setas do teclado para percorrer e Enter para abrir.
 - **Modo leitura:** botão "Modo leitura" dentro da notícia. Tela limpa, letra grande (A− / A+), barra de progresso, setas ← → para trocar de notícia e Esc para sair.
+
+## Versão 3.8: novas editorias e assuntos
+- Editorias agora: **Economia, Futebol, Política e IA e Tecnologia**. Design gráfico e Marketing saíram (as notícias antigas dessas editorias são removidas na primeira rodada do robô).
+- **Assuntos** dentro de cada editoria (chips no topo da lista): Adobe e Photoshop, CorelDRAW, GitHub e Git, Figma e Canva, IA generativa, Programação; Juros e inflação, Bolsa e dólar, Contas públicas, Emprego e renda, Cripto; Brasileirão, Copas e Libertadores, Futebol europeu, Seleção; Congresso, STF e Justiça, Governo federal, Eleições.
+- Para criar ou mudar um assunto, edite `config/assuntos.json` (id, editoria, nome e palavras sem acento). Para mudar as palavras que levam uma notícia a cada editoria, edite `scripts/lib/classify.js`.
+- Para adicionar um site/canal, edite `fontes.json` (id, name, url do RSS, category). `"filtro": "economia"` deixa passar só o que for do assunto. Fontes com `"verificada": false` ainda não foram testadas: veja o rodapé do site para saber se estão respondendo.

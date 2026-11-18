@@ -1,4 +1,9 @@
 {
+  "economia": {
+    "label": "Economia",
+    "icon": "💰",
+    "color": "#b45309"
+  },
   "futebol": {
     "label": "Futebol",
     "icon": "⚽",
@@ -10,18 +15,8 @@
     "color": "#4338ca"
   },
   "ia": {
-    "label": "Inteligência Artificial",
+    "label": "IA e Tecnologia",
     "icon": "🤖",
     "color": "#7c3aed"
-  },
-  "design": {
-    "label": "Design Gráfico",
-    "icon": "🎨",
-    "color": "#be185d"
-  },
-  "marketing": {
-    "label": "Marketing",
-    "icon": "📣",
-    "color": "#b45309"
   }
 }

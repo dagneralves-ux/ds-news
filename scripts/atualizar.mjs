@@ -12,6 +12,7 @@ import { fetchAllFeeds, decodeEntities } from './lib/rss.js';
 import { summarizeItems } from './lib/ai.js';
 import { generateTrends } from './lib/trends.js';
 import { CATEGORIES } from './lib/categorias.js';
+import { ASSUNTOS, topicsOf } from './lib/classify.js';
 import { buscarJogos, hojeSP, localizarEscudos } from './lib/jogos.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -48,8 +49,16 @@ async function main() {
     .filter((n, i) => i < 30 || now - new Date(n.date) <= MAX_AGE_MS)
     .slice(0, MAX_ITEMS);
 
+  // Editorias que não existem mais (ex.: design, marketing) saem; assuntos (Adobe, GitHub, Selic...) são marcados em todas
+  const before = merged.length;
+  for (let i = merged.length - 1; i >= 0; i--) if (!CATEGORIES[merged[i].category]) merged.splice(i, 1);
+  let cleaned = merged.length !== before;
+  for (const n of merged) {
+    const t = topicsOf(n.title, n.summary);
+    if (JSON.stringify(t) !== JSON.stringify(n.topics || [])) { n.topics = t; cleaned = true; }
+  }
+
   // Limpa entidades HTML que ficaram em notícias antigas (ex.: &rsaquo;) antes de gerar tendências
-  let cleaned = false;
   for (const n of merged) {
     for (const k of ['title', 'summary']) {
       if (typeof n[k] === 'string' && /&(#\d+|#x[0-9a-f]+|[a-zA-Z]+);/i.test(n[k])) {
@@ -78,6 +87,7 @@ async function main() {
     const out = {
       atualizadoEm: new Date().toISOString(),
       categorias: CATEGORIES,
+      assuntos: ASSUNTOS.map(({ id, categoria, label }) => ({ id, categoria, label })),
       tendencias: generateTrends(merged),
       itens: merged.map(({ classified, ...rest }) => rest),
     };

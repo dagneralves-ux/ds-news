@@ -1,7 +1,7 @@
 /* TabNews: service worker. Páginas e dados: rede primeiro (sempre a versão nova), cache como reserva. */
-const VERSION = 'temnews-v16-leitura';
-const CORE = ['./', 'index.html', 'manifest.json', 'assets/css/main.css?v=18', 'assets/js/config.js?v=6', 'assets/js/api.js?v=9',
-  'assets/js/favorites.js?v=6', 'assets/js/sync.js?v=1', 'assets/js/app.js?v=17', 'assets/js/pwa.js?v=2', 'icons/logo-tem.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png'];
+const VERSION = 'temnews-v18-icones';
+const CORE = ['./', 'index.html', 'manifest.json', 'assets/css/main.css?v=19', 'assets/js/config.js?v=7', 'assets/js/api.js?v=10',
+  'assets/js/favorites.js?v=6', 'assets/js/sync.js?v=1', 'assets/js/app.js?v=18', 'assets/js/pwa.js?v=2', 'icons/logo-tem.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));

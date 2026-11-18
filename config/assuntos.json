@@ -1,0 +1,289 @@
+[
+  {
+    "id": "adobe",
+    "categoria": "ia",
+    "label": "Adobe e Photoshop",
+    "termos": [
+      "adobe",
+      "photoshop",
+      "illustrator",
+      "premiere",
+      "after effects",
+      "lightroom",
+      "indesign",
+      "firefly",
+      "creative cloud",
+      "acrobat"
+    ]
+  },
+  {
+    "id": "corel",
+    "categoria": "ia",
+    "label": "CorelDRAW",
+    "termos": [
+      "coreldraw",
+      "corel draw",
+      "corel",
+      "corel painter"
+    ]
+  },
+  {
+    "id": "github",
+    "categoria": "ia",
+    "label": "GitHub e Git",
+    "termos": [
+      "github",
+      "git",
+      "gitlab",
+      "copilot",
+      "pull request",
+      "open source",
+      "codigo aberto",
+      "vs code",
+      "visual studio"
+    ]
+  },
+  {
+    "id": "figma",
+    "categoria": "ia",
+    "label": "Figma e Canva",
+    "termos": [
+      "figma",
+      "canva",
+      "framer",
+      "webflow"
+    ]
+  },
+  {
+    "id": "iagen",
+    "categoria": "ia",
+    "label": "IA generativa",
+    "termos": [
+      "chatgpt",
+      "openai",
+      "gemini",
+      "claude",
+      "anthropic",
+      "midjourney",
+      "deepseek",
+      "llm",
+      "ia generativa",
+      "inteligencia artificial",
+      "stable diffusion",
+      "sora",
+      "grok",
+      "perplexity"
+    ]
+  },
+  {
+    "id": "dev",
+    "categoria": "ia",
+    "label": "Programação",
+    "termos": [
+      "programacao",
+      "programador",
+      "programadores",
+      "desenvolvedor",
+      "desenvolvedores",
+      "python",
+      "javascript",
+      "typescript",
+      "react",
+      "linux",
+      "devops",
+      "api"
+    ]
+  },
+  {
+    "id": "juros",
+    "categoria": "economia",
+    "label": "Juros e inflação",
+    "termos": [
+      "selic",
+      "copom",
+      "juros",
+      "inflacao",
+      "ipca",
+      "igpm",
+      "taxa basica"
+    ]
+  },
+  {
+    "id": "mercado",
+    "categoria": "economia",
+    "label": "Bolsa e dólar",
+    "termos": [
+      "ibovespa",
+      "bolsa",
+      "b3",
+      "dolar",
+      "acoes",
+      "mercado financeiro",
+      "fiis",
+      "fii",
+      "dividendos"
+    ]
+  },
+  {
+    "id": "fiscal",
+    "categoria": "economia",
+    "label": "Contas públicas",
+    "termos": [
+      "arcabouco fiscal",
+      "orcamento",
+      "fazenda",
+      "haddad",
+      "deficit",
+      "superavit",
+      "divida publica",
+      "imposto",
+      "impostos",
+      "reforma tributaria",
+      "receita federal",
+      "meta fiscal"
+    ]
+  },
+  {
+    "id": "emprego",
+    "categoria": "economia",
+    "label": "Emprego e renda",
+    "termos": [
+      "desemprego",
+      "emprego",
+      "caged",
+      "pnad",
+      "salario minimo",
+      "renda",
+      "trabalhadores",
+      "inss"
+    ]
+  },
+  {
+    "id": "cripto",
+    "categoria": "economia",
+    "label": "Cripto",
+    "termos": [
+      "bitcoin",
+      "criptomoeda",
+      "criptomoedas",
+      "ethereum",
+      "cripto",
+      "blockchain"
+    ]
+  },
+  {
+    "id": "brasileirao",
+    "categoria": "futebol",
+    "label": "Brasileirão",
+    "termos": [
+      "brasileirao",
+      "serie a",
+      "serie b",
+      "rebaixamento",
+      "rodada"
+    ]
+  },
+  {
+    "id": "copas",
+    "categoria": "futebol",
+    "label": "Copas e Libertadores",
+    "termos": [
+      "copa do brasil",
+      "libertadores",
+      "sul americana",
+      "champions league",
+      "copa do mundo"
+    ]
+  },
+  {
+    "id": "europa",
+    "categoria": "futebol",
+    "label": "Futebol europeu",
+    "termos": [
+      "premier league",
+      "la liga",
+      "bundesliga",
+      "ligue 1",
+      "serie a italiana",
+      "champions league",
+      "real madrid",
+      "barcelona",
+      "manchester city",
+      "liverpool"
+    ]
+  },
+  {
+    "id": "selecao",
+    "categoria": "futebol",
+    "label": "Seleção",
+    "termos": [
+      "selecao brasileira",
+      "cbf",
+      "convocacao",
+      "convocados",
+      "ancelotti",
+      "eliminatorias"
+    ]
+  },
+  {
+    "id": "congresso",
+    "categoria": "politica",
+    "label": "Congresso",
+    "termos": [
+      "congresso",
+      "senado",
+      "senador",
+      "senadora",
+      "camara dos deputados",
+      "deputado",
+      "deputada",
+      "pec",
+      "projeto de lei",
+      "cpi"
+    ]
+  },
+  {
+    "id": "justica",
+    "categoria": "politica",
+    "label": "STF e Justiça",
+    "termos": [
+      "stf",
+      "tse",
+      "pgr",
+      "moraes",
+      "justica",
+      "policia federal",
+      "tribunal"
+    ]
+  },
+  {
+    "id": "governo",
+    "categoria": "politica",
+    "label": "Governo federal",
+    "termos": [
+      "lula",
+      "planalto",
+      "ministro",
+      "ministra",
+      "governo federal",
+      "alckmin",
+      "medida provisoria",
+      "decreto"
+    ]
+  },
+  {
+    "id": "eleicoes",
+    "categoria": "politica",
+    "label": "Eleições",
+    "termos": [
+      "eleicao",
+      "eleicoes",
+      "partido",
+      "candidato",
+      "candidata",
+      "pesquisa eleitoral",
+      "pre candidato",
+      "campanha eleitoral"
+    ]
+  }
+]

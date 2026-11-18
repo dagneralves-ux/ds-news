@@ -1,12 +1,12 @@
 {
   "name": "Tem News",
   "short_name": "Tem News",
-  "description": "Seu radar pessoal de notícias brasileiras com resumos por IA",
+  "description": "Economia, futebol, política e IA: seu radar pessoal de notícias com resumos por IA",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f4f7fc",
-  "theme_color": "#0b5bff",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "lang": "pt-BR",
   "icons": [
     {
@@ -26,6 +26,30 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Jogos de hoje",
+      "short_name": "Jogos",
+      "url": "./#jogos",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Economia",
+      "short_name": "Economia",
+      "url": "./#economia",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

@@ -1,6 +1,6 @@
 /**
- * Classificação das notícias para os seus 5 assuntos:
- * futebol, politica, ia (inteligência artificial), design (design gráfico), marketing.
+ * Classificação das notícias para as suas 4 editorias:
+ * economia, futebol, politica e ia (inteligência artificial e tecnologia: Adobe, Corel, GitHub etc.).
  *
  * - classifyCategory: usada em fontes "geral" (a editoria vem do conteúdo). Se nada casar, devolve
  *   null e a notícia é descartada (não é do seu interesse).
@@ -10,6 +10,8 @@
  * Para ajustar os assuntos, edite as listas abaixo (palavras sem acento, minúsculas).
  */
 
+import { readFileSync } from 'node:fs';
+
 export function normalizeText(str) {
   return String(str || '')
     .toLowerCase()
@@ -17,7 +19,8 @@ export function normalizeText(str) {
     .replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9\s]/g, ' ')
     .replace(/\s+/g, ' ')
-    .trim();
+    .trim()
+    .replace(/\bbolsa familia\b/g, 'bolsafamilia');   // programa social: não é "bolsa de valores"
 }
 
 export const CATEGORY_TERMS = {
@@ -36,30 +39,35 @@ export const CATEGORY_TERMS = {
     'camara dos deputados', 'stf', 'tse', 'eleicao', 'eleicoes', 'partido', 'planalto', 'ministro',
     'ministra', 'governo federal', 'prefeito', 'governador', 'governadora', 'pec', 'cpi', 'oposicao',
     'base aliada', 'centrao', 'alckmin', 'moraes', 'pgr', 'impeachment', 'reforma tributaria',
-    'politica', 'politico', 'politicos', 'votacao', 'projeto de lei', 'medida provisoria',
+    'politica', 'politico', 'politicos', 'bolsafamilia', 'votacao', 'projeto de lei', 'medida provisoria',
+  ],
+  economia: [
+    'economia', 'economico', 'economica', 'pib', 'inflacao', 'ipca', 'igpm', 'selic', 'copom', 'juros',
+    'taxa basica', 'banco central', 'galipolo', 'dolar', 'cambio', 'bolsa', 'ibovespa', 'b3', 'mercado financeiro',
+    'investimento', 'investimentos', 'investidor', 'investidores', 'acoes', 'fii', 'fiis', 'renda fixa',
+    'tesouro direto', 'dividendos', 'orcamento', 'deficit', 'superavit', 'divida publica', 'arcabouco fiscal',
+    'meta fiscal', 'fazenda', 'haddad', 'imposto', 'impostos', 'tributo', 'tributos', 'receita federal',
+    'petrobras', 'petroleo', 'commodities', 'desemprego', 'emprego', 'caged', 'pnad', 'salario minimo',
+    'varejo', 'industria', 'agronegocio', 'exportacoes', 'importacoes', 'balanca comercial', 'tarifa', 'tarifas',
+    'recessao', 'credito', 'financiamento', 'bitcoin', 'criptomoeda', 'criptomoedas', 'cripto', 'ethereum',
+    'pix', 'bancos', 'lucro', 'balanco', 'fed', 'consumo', 'endividamento', 'inadimplencia',
   ],
   ia: [
-    'inteligencia artificial', 'chatgpt', 'openai', 'gemini', 'anthropic', 'llm', 'machine learning',
+    'inteligencia artificial', 'chatgpt', 'openai', 'gemini', 'anthropic', 'claude', 'llm', 'machine learning',
     'aprendizado de maquina', 'ia generativa', 'copilot', 'deepseek', 'midjourney', 'grok', 'sora',
     'modelo de linguagem', 'agentes de ia', 'rede neural', 'redes neurais', 'deep learning',
     'nvidia', 'perplexity', 'stable diffusion', 'robo', 'robos', 'automacao',
-  ],
-  design: [
-    'design', 'designer', 'designers', 'design grafico', 'tipografia', 'logotipo', 'logomarca',
-    'identidade visual', 'branding', 'ilustracao', 'ilustrador', 'figma', 'adobe', 'photoshop',
-    'illustrator', 'canva', 'ux', 'ui design', 'paleta de cores', 'cartaz', 'embalagem', 'packaging',
-    'motion design', 'arte digital', 'fontes gratuitas', 'mockup', 'criacao visual', 'diagramacao',
-  ],
-  marketing: [
-    'marketing', 'publicidade', 'propaganda', 'campanha', 'agencia de publicidade', 'social media',
-    'influenciador', 'influenciadores', 'influencer', 'seo', 'trafego pago', 'anuncios', 'ads',
-    'copywriting', 'consumidor', 'cannes lions', 'meta ads', 'google ads', 'e commerce', 'branding',
-    'marketing digital', 'marketing de conteudo', 'engajamento', 'conversao', 'lead', 'leads',
+    // ferramentas e programação
+    'adobe', 'photoshop', 'illustrator', 'premiere', 'after effects', 'lightroom', 'indesign', 'firefly',
+    'creative cloud', 'acrobat', 'coreldraw', 'corel draw', 'corel', 'figma', 'canva', 'framer', 'webflow',
+    'github', 'git', 'gitlab', 'pull request', 'open source', 'codigo aberto', 'vs code', 'visual studio',
+    'programacao', 'programador', 'programadores', 'desenvolvedor', 'desenvolvedores', 'python', 'javascript',
+    'typescript', 'react', 'linux', 'devops', 'api', 'software', 'ciberseguranca', 'vazamento de dados',
   ],
 };
 
 // Empate: a primeira da lista vence.
-const CATEGORY_PRIORITY = ['politica', 'futebol', 'ia', 'marketing', 'design'];
+const CATEGORY_PRIORITY = ['politica', 'futebol', 'economia', 'ia'];
 
 const compile = terms => terms.map(t => new RegExp(`(?:^| )${t}(?: |$)`));
 const _compiled = Object.fromEntries(Object.entries(CATEGORY_TERMS).map(([k, v]) => [k, compile(v)]));
@@ -107,7 +115,7 @@ const IMPORTANCE_TERMS = {
   high: [
     'stf', 'tse', 'decreto', 'policia federal', 'cpi', 'sanciona', 'renuncia', 'impeachment',
     'golpe de estado', 'demite tecnico', 'demitido', 'convocacao da selecao', 'convocados',
-    'lanca gpt', 'lanca gemini', 'nova versao do chatgpt', 'cannes lions',
+    'lanca gpt', 'lanca gemini', 'nova versao do chatgpt', 'copom', 'selic',
   ],
 };
 const _imp = Object.fromEntries(Object.entries(IMPORTANCE_TERMS).map(([l, t]) => [l, compile(t)]));
@@ -117,4 +125,15 @@ export function classifyImportance(title) {
   if (_imp.urgent.some(re => re.test(t))) return 'urgent';
   if (_imp.high.some(re => re.test(t))) return 'high';
   return 'medium';
+}
+
+
+/** Assuntos dentro de cada editoria (config/assuntos.json): Adobe, CorelDRAW, GitHub, Selic... */
+export const ASSUNTOS = JSON.parse(readFileSync(new URL('../../config/assuntos.json', import.meta.url), 'utf8'));
+const _assuntos = ASSUNTOS.map(a => ({ id: a.id, res: compile(a.termos.map(normalizeText)) }));
+
+/** Devolve os ids dos assuntos citados no título/trecho (um item pode ter vários). */
+export function topicsOf(title, summary = '') {
+  const text = normalizeText(`${title} ${summary}`);
+  return _assuntos.filter(a => a.res.some(re => re.test(text))).map(a => a.id);
 }

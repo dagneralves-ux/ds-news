@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
-import { classifyCategory, passesFilter, classifyImportance } from '../scripts/lib/classify.js';
+import { classifyCategory, passesFilter, classifyImportance, topicsOf } from '../scripts/lib/classify.js';
 import { parseBatchResponse } from '../scripts/lib/ai.js';
 
 let passed = 0;
@@ -21,8 +21,16 @@ ok('OpenAI → ia', () => assert.equal(classifyCategory('OpenAI lança novo mode
 ok('"IA" maiúsculo → ia', () => assert.equal(classifyCategory('Empresas apostam em IA para vender mais'), 'ia'));
 ok('"ia" verbo não é IA', () => assert.equal(classifyCategory('Ele ia ao mercado todo dia'), null));
 ok('clima não é dos seus assuntos', () => assert.equal(classifyCategory('Previsão do tempo para o fim de semana'), null));
-ok('Figma/branding → design', () => assert.equal(classifyCategory('Nova identidade visual e tipografia da marca'), 'design'));
-ok('campanha → marketing', () => assert.equal(classifyCategory('Campanha de marketing digital bate recorde'), 'marketing'));
+ok('Selic/Copom → economia', () => assert.equal(classifyCategory('Copom mantém a Selic e dólar sobe'), 'economia'));
+ok('Photoshop/Adobe → ia (tecnologia)', () => assert.equal(classifyCategory('Adobe lança novo recurso no Photoshop'), 'ia'));
+ok('GitHub → ia (tecnologia)', () => assert.equal(classifyCategory('GitHub anuncia novidades para desenvolvedores'), 'ia'));
+ok('assuntos: Adobe e GitHub', () => {
+  assert.deepEqual(topicsOf('Adobe lança novo recurso no Photoshop'), ['adobe']);
+  assert.ok(topicsOf('GitHub Copilot ganha agente').includes('github'));
+  assert.ok(topicsOf('CorelDRAW 2026 chega com IA').includes('corel'));
+  assert.ok(topicsOf('Copom sobe a Selic').includes('juros'));
+});
+ok('design e marketing não são mais editorias', () => assert.equal(classifyCategory('Campanha de marketing digital e identidade visual da marca'), null));
 ok('filtro futebol deixa vôlei de fora', () => assert.equal(passesFilter({ filtro: 'futebol' }, 'Vôlei: Brasil vence a Itália', ''), false));
 ok('filtro futebol deixa gol passar', () => assert.equal(passesFilter({ filtro: 'futebol' }, 'Gol do Corinthians decide', ''), true));
 ok('URGENTE vira urgent', () => assert.equal(classifyImportance('URGENTE: Senado aprova PEC'), 'urgent'));
@@ -48,7 +56,7 @@ const FEEDS = {
     item('Ele ia ao mercado todo dia', now - 14 * 60000, long),
     item('Notícia muito antiga sobre Lula', now - 30 * 86400000, long),
   ]),
-  '/atom.xml': `<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"><entry><title>Nova identidade visual e tipografia para a marca</title><link href="https://exemplo.com.br/atom1"/><published>${new Date(now - 30 * 60000).toISOString()}</published><summary>${long}</summary></entry></feed>`,
+  '/atom.xml': `<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"><entry><title>Copom mantém a Selic e dólar fecha em alta</title><link href="https://exemplo.com.br/atom1"/><published>${new Date(now - 30 * 60000).toISOString()}</published><summary>${long}</summary></entry></feed>`,
 };
 
 const server = http.createServer((req, res) => {
@@ -74,8 +82,8 @@ const fontes = [
   { id: 'fut', name: 'Futebol FC', url: `${base}/futebol.xml`, category: 'futebol' },
   { id: 'esp', name: 'Esportes', url: `${base}/esportes.xml`, category: 'futebol', filtro: 'futebol' },
   { id: 'ger', name: 'Geral', url: `${base}/geral.xml`, category: 'geral' },
-  { id: 'atom', name: 'Atom', url: `${base}/atom.xml`, category: 'design' },
-  { id: 'off', name: 'Fora do ar', url: `${base}/nao-existe.xml`, category: 'marketing' },
+  { id: 'atom', name: 'Atom', url: `${base}/atom.xml`, category: 'economia' },
+  { id: 'off', name: 'Fora do ar', url: `${base}/nao-existe.xml`, category: 'ia' },
 ];
 writeFileSync(join(dir, 'fontes.json'), JSON.stringify(fontes));
 const run = (extra = {}) => {
@@ -106,7 +114,12 @@ ok('fonte geral classifica e descarta o que não interessa', () => {
   assert.ok(!titles.some(t => t.includes('Ele ia ao mercado')));
 });
 ok('notícia com mais de 7 dias fica de fora', () => assert.ok(!titles.some(t => t.includes('muito antiga'))));
-ok('Atom funciona e vai para design', () => assert.equal(news.itens.find(n => n.title.includes('identidade visual')).category, 'design'));
+ok('Atom funciona e vai para economia', () => assert.equal(news.itens.find(n => n.title.includes('Copom')).category, 'economia'));
+ok('notícias ganham assuntos e o site recebe a lista', () => {
+  assert.ok(news.itens.find(n => n.title.includes('Copom')).topics.includes('juros'));
+  assert.ok(Array.isArray(news.assuntos) && news.assuntos.some(a => a.id === 'adobe'));
+  assert.deepEqual(Object.keys(news.categorias), ['economia', 'futebol', 'politica', 'ia']);
+});
 ok('categorias corretas', () => {
   const by = t => news.itens.find(n => n.title.startsWith(t)).category;
   assert.equal(by('URGENTE'), 'politica'); assert.equal(by('OpenAI'), 'ia'); assert.equal(by('Zagueiro'), 'futebol');

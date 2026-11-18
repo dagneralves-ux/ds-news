@@ -739,3 +739,9 @@ html.no-scroll { overflow: hidden; }
 .reader-note { margin-top: 18px; color: var(--muted); font-size: 12px; }
 @media (max-width: 480px) { .reader-doc { padding: 26px 18px 90px; } .reader-pos { display: none; } }
 @media (prefers-reduced-motion: reduce) { .reader { transition: none; } }
+
+
+/* --- assuntos dentro da editoria --- */
+.topic-bar { align-items: center; margin: 0 0 16px; padding-bottom: 2px; }
+.topic-label { flex: 0 0 auto; color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.topic-bar .filter-btn { flex: 0 0 auto; }

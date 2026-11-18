@@ -35,6 +35,8 @@ const State = {
   list: { items: [], page: 1, hasMore: false, total: 0 },
   meta: { counts: {}, total: 0, todayCount: 0, lastUpdated: null },
   jogos: null,              // conteúdo de data/jogos.json
+  topic: 'all',             // assunto escolhido dentro da editoria (Adobe, GitHub...)
+  topics: [],               // assuntos da editoria atual, com contagem
   jogosLeague: 'all',
   loading: false,
   error: null,
@@ -714,23 +716,31 @@ function renderHome(content) {
   heroStart();
 }
 
+function topicBarHtml() {
+  if (!State.topics.length) return '';
+  const chip = (id, label, n) => `<button type="button" class="filter-btn${State.topic === id ? ' active' : ''}" data-action="topic" data-value="${escapeHtml(id)}">${escapeHtml(label)}${n != null ? ` <small>${n}</small>` : ''}</button>`;
+  return `<div class="filters-bar topic-bar" aria-label="Assuntos da editoria"><span class="topic-label">Assuntos</span>${chip('all', 'Todos')}${State.topics.map(t => chip(t.id, t.label, t.n)).join('')}</div>`;
+}
+
 function renderList(content) {
   const { items, hasMore, total } = State.list;
   const cat = categoryOf(State.category);
 
   if (!items.length) {
-    content.innerHTML = emptyStateHtml('⌕', 'Nenhuma notícia encontrada',
+    content.innerHTML = topicBarHtml() + emptyStateHtml('⌕', 'Nenhuma notícia encontrada',
       'Tente outro filtro ou volte mais tarde.');
     return;
   }
 
   const filterLabel = { today: 'hoje', '24h': 'últimas 24h', urgent: 'urgentes', high: 'destaques' }[State.filter];
+  const topicLabel = State.topic !== 'all' ? State.topics.find(t => t.id === State.topic)?.label : '';
   const title = State.category === 'all' ? 'Todas as notícias' : cat.label;
   content.innerHTML = `
     <div class="section-header">
-      <h3 class="section-title"><span class="sec-dot" style="background:${escapeHtml(cat.color)}"></span>${escapeHtml(title)}${filterLabel ? ` (${escapeHtml(filterLabel)})` : ''}
+      <h3 class="section-title"><span class="sec-dot" style="background:${escapeHtml(cat.color)}"></span>${escapeHtml(title)}${topicLabel ? ` · ${escapeHtml(topicLabel)}` : ''}${filterLabel ? ` (${escapeHtml(filterLabel)})` : ''}
         <span class="section-count">${total}</span></h3>
     </div>
+    ${topicBarHtml()}
     <div class="news-grid${State.category !== 'all' ? ' hide-cat' : ''}">${items.map(n => renderCard(n)).join('')}</div>
     ${hasMore ? loadMoreHtml : ''}`;
 }
@@ -796,7 +806,7 @@ function updateChrome() {
   if (topUpdated) topUpdated.textContent = lastUpdated ? `Atualizado ${formatDateTime(lastUpdated)}` : 'Buscar atualizações';
 
   const label = { all: null, favorites: 'Favoritos', history: 'Histórico', jogos: 'Jogos de hoje' }[State.category] ?? categoryOf(State.category).label;
-  document.title = label ? `${label} | Tem News` : 'Tem News | Futebol, política, IA, design e marketing';
+  document.title = label ? `${label} | Tem News` : 'Tem News | Economia, futebol, política e IA';
 }
 
 function applyMeta(data) {
@@ -860,8 +870,14 @@ async function loadList({ reset = true, force = false } = {}) {
     const params = new URLSearchParams({ limit: CONFIG.PAGE_SIZE, page });
     if (State.category !== 'all') params.set('category', State.category);
     if (State.filter !== 'all') params.set('filter', State.filter);
+    if (State.topic !== 'all') params.set('topic', State.topic);
 
     const res = await API.get(`/api/news?${params}`);
+    if (reset) {
+      State.topics = State.category === 'all' || State.category === 'favorites' || State.category === 'history'
+        ? [] : (await API.get(`/api/topics?category=${encodeURIComponent(State.category)}`)).topics || [];
+      if (State.topic !== 'all' && !State.topics.some(t => t.id === State.topic)) State.topic = 'all';
+    }
     if (req !== State.reqId) return;
     remember(res.items);
     State.list = {
@@ -918,6 +934,7 @@ function readHash() {
 }
 
 function go(category, { filter } = {}) {
+  if (State.category !== category) State.topic = 'all';
   State.category = category;
   if (filter !== undefined) State.filter = filter;
   else if (category === 'favorites' || category === 'history' || category === 'jogos') State.filter = 'all';
@@ -1376,6 +1393,7 @@ function handleClick(e) {
     case 'category':      closePanel(); go(value); break;
     case 'today':         go('all', { filter: 'today' }); break;
     case 'filter':        setFilter(value); break;
+    case 'topic':         State.topic = State.topic === value ? 'all' : value; loadList(); break;
     case 'refresh':       loadCurrent({ force: true }); break;
     case 'retry':         loadCurrent({ force: true }); break;
     case 'load-more':     loadList({ reset: false }); break;
