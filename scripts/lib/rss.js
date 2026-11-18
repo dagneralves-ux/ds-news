@@ -240,13 +240,13 @@ function toHttps(url) {
 const NAMED_ENTITIES = {
   amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
   hellip: '…', ndash: '–', mdash: '—', lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”',
-  laquo: '«', raquo: '»', bull: '•', middot: '·', copy: '©', reg: '®', trade: '™',
+  laquo: '«', raquo: '»', lsaquo: '‹', rsaquo: '›', sbquo: '‚', bdquo: '„', rarr: '→', larr: '←', times: '×', euro: '€', deg: '°', ordm: 'º', ordf: 'ª', sect: '§', para: '¶', bull: '•', middot: '·', copy: '©', reg: '®', trade: '™',
   aacute: 'á', agrave: 'à', acirc: 'â', atilde: 'ã', auml: 'ä', ccedil: 'ç',
   eacute: 'é', egrave: 'è', ecirc: 'ê', euml: 'ë', iacute: 'í', igrave: 'ì', icirc: 'î',
   oacute: 'ó', ograve: 'ò', ocirc: 'ô', otilde: 'õ', ouml: 'ö', uacute: 'ú', ugrave: 'ù',
   ucirc: 'û', uuml: 'ü', ntilde: 'ñ',
   Aacute: 'Á', Agrave: 'À', Acirc: 'Â', Atilde: 'Ã', Ccedil: 'Ç', Eacute: 'É', Ecirc: 'Ê',
-  Iacute: 'Í', Oacute: 'Ó', Ocirc: 'Ô', Otilde: 'Õ', Uacute: 'Ú', Uuml: 'Ü',
+  Iacute: 'Í', Oacute: 'Ó', Ocirc: 'Ô', Otilde: 'Õ', Uacute: 'Ú', Uuml: 'Ü', Ntilde: 'Ñ', Auml: 'Ä', Ouml: 'Ö', yacute: 'ý', yuml: 'ÿ', szlig: 'ß',
 };
 
 export function decodeEntities(str) {
