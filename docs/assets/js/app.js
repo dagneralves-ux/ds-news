@@ -637,11 +637,11 @@ function markLive() {
 function initClima() {
   const el = document.getElementById('topClima');
   if (!el) return;
-  const CIDADE = { nome: 'Lavras', lat: -21.245, lon: -45.0 };
+  const CIDADE = { nome: 'Catolé do Rocha', lat: -6.3411, lon: -37.7456 };
   const icone = c => c === 0 ? '☀️' : c <= 2 ? '🌤️' : c === 3 ? '☁️' : c <= 48 ? '🌫️' : c <= 67 ? '🌧️' : c <= 77 ? '❄️' : c <= 82 ? '🌦️' : '⛈️';
   const mostra = d => { el.innerHTML = `<span aria-hidden="true">${icone(d.c)}</span>${Math.round(d.t)}°<small>${CIDADE.nome}</small>`; el.hidden = false; };
   let cache = null;
-  try { cache = JSON.parse(localStorage.getItem('tn-clima') || 'null'); } catch (e) {}
+  try { cache = JSON.parse(localStorage.getItem('tn-clima2') || 'null'); } catch (e) {}
   if (cache) mostra(cache);
   const buscar = async () => {
     if (cache && Date.now() - cache.at < 600000) return;
@@ -650,7 +650,7 @@ function initClima() {
       if (!r.ok) return;
       const j = await r.json();
       cache = { t: j.current.temperature_2m, c: j.current.weather_code, at: Date.now() };
-      try { localStorage.setItem('tn-clima', JSON.stringify(cache)); } catch (e) {}
+      try { localStorage.setItem('tn-clima2', JSON.stringify(cache)); } catch (e) {}
       mostra(cache);
     } catch (e) { /* sem rede: mantém o último valor */ }
   };
