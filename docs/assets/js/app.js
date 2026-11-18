@@ -633,6 +633,31 @@ function markLive() {
 }
 
 // Botão "voltar ao topo"
+/* Temperatura da cidade (Open-Meteo, sem chave) */
+function initClima() {
+  const el = document.getElementById('topClima');
+  if (!el) return;
+  const CIDADE = { nome: 'Lavras', lat: -21.245, lon: -45.0 };
+  const icone = c => c === 0 ? '☀️' : c <= 2 ? '🌤️' : c === 3 ? '☁️' : c <= 48 ? '🌫️' : c <= 67 ? '🌧️' : c <= 77 ? '❄️' : c <= 82 ? '🌦️' : '⛈️';
+  const mostra = d => { el.innerHTML = `<span aria-hidden="true">${icone(d.c)}</span>${Math.round(d.t)}°<small>${CIDADE.nome}</small>`; el.hidden = false; };
+  let cache = null;
+  try { cache = JSON.parse(localStorage.getItem('tn-clima') || 'null'); } catch (e) {}
+  if (cache) mostra(cache);
+  const buscar = async () => {
+    if (cache && Date.now() - cache.at < 600000) return;
+    try {
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${CIDADE.lat}&longitude=${CIDADE.lon}&current=temperature_2m,weather_code&timezone=auto`);
+      if (!r.ok) return;
+      const j = await r.json();
+      cache = { t: j.current.temperature_2m, c: j.current.weather_code, at: Date.now() };
+      try { localStorage.setItem('tn-clima', JSON.stringify(cache)); } catch (e) {}
+      mostra(cache);
+    } catch (e) { /* sem rede: mantém o último valor */ }
+  };
+  buscar();
+  setInterval(buscar, 600000);
+}
+
 function initToTop() {
   const btn = $('#toTop');
   if (!btn) return;
@@ -1527,6 +1552,7 @@ async function init() {
   $('#searchShortcut').textContent = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K';
 
   initToTop();
+  initClima();
   initReader();
   initHeroSwipe();
   document.addEventListener('click', handleClick);

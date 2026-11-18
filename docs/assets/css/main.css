@@ -84,6 +84,8 @@ i { font-style: normal; }
 .topbar-trend button { overflow: hidden; max-width: 46ch; color: var(--ink); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .topbar-trend button:hover { color: var(--accent); }
 .topbar-right { display: flex; align-items: center; gap: 14px; margin-left: auto; }
+.topbar-clima { display: flex; align-items: center; gap: 6px; color: var(--ink-2); font-weight: 700; white-space: nowrap; }
+.topbar-clima small { color: var(--muted); font-size: 11px; font-weight: 600; }
 .topbar-status { display: flex; align-items: center; gap: 7px; color: var(--muted); font-weight: 600; white-space: nowrap; }
 .topbar-btn { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; color: var(--ink-2); }
 .topbar-btn:hover { color: var(--accent); background: var(--soft); }
@@ -146,8 +148,8 @@ i { font-style: normal; }
 }
 .sidebar.mobile-open { transform: none; visibility: visible; }
 .sidebar-brand { display: flex; align-items: center; gap: 4px; padding: 0 8px 14px; }
-.logo-img { display: block; height: 46px; width: auto; }
-.sidebar .logo-img, .footer-logo .logo-img { height: 44px; }
+.logo-img { display: block; height: 40px; width: auto; }
+.sidebar .logo-img, .footer-logo .logo-img { height: 48px; }
 .splash .logo-img { height: 84px; }
 .sidebar-section { display: grid; gap: 3px; margin-top: 6px; }
 .sidebar-label { padding: 8px 12px 6px; color: var(--on-navy-muted); font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
@@ -430,7 +432,6 @@ a.also-chip:hover { border-color: var(--accent); color: var(--accent); }
 
 /* faixa "fique por dentro" */
 .update-banner { display: flex; align-items: center; gap: 24px; margin-top: 42px; padding: 20px 28px; border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--line)); border-radius: 18px; background: var(--accent-bg); }
-.update-art { flex: 0 0 auto; width: 84px; height: 84px; margin: -8px 0; object-fit: contain; }
 .update-copy { flex: 1; min-width: 0; }
 .update-copy h2 { font-size: 19px; font-weight: 800; letter-spacing: -.02em; }
 .update-copy p { max-width: 62ch; margin-top: 5px; color: var(--ink-2); font-size: 13.5px; }
@@ -583,7 +584,6 @@ a.panel-also-row:hover { color: var(--accent); }
   .item-summary { font-size: 13px; }
   :root[data-view="cards"] .news-grid { grid-template-columns: 1fr; }
   .update-banner { flex-direction: column; align-items: flex-start; gap: 14px; padding: 20px; }
-  .update-art { width: 64px; height: 64px; margin: 0; }
   .update-banner .btn-primary { width: 100%; }
   .footer-in { grid-template-columns: 1fr; gap: 26px; padding-top: 34px; }
   .site-footer { padding-bottom: calc(66px + env(safe-area-inset-bottom)); }
@@ -745,3 +745,5 @@ html.no-scroll { overflow: hidden; }
 .topic-bar { align-items: center; margin: 0 0 16px; padding-bottom: 2px; }
 .topic-label { flex: 0 0 auto; color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .topic-bar .filter-btn { flex: 0 0 auto; }
+
+@media (max-width: 720px) { .topbar-clima small { display: none; } }
