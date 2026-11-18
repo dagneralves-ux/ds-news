@@ -96,3 +96,20 @@ As fontes adicionadas/ajustadas estão marcadas como não verificadas até a pri
 - E-Commerce Brasil aponta para o feed geral oficial; Neil Patel Brasil usa a listagem brasileira com fallback HTML.
 - O painel diferencia captura por RSS e captura pela página do publisher.
 - O Supabase e suas tabelas/políticas não foram alterados.
+
+## Versão 3.0 — layout de portal (referência USA Today)
+- Nova estrutura: barra superior (data, assunto em alta), cabeçalho com busca e botão Atualizar, menu de editorias fixo, faixa das 4 últimas, destaque em carrossel com "Painel do dia", "Não perca", "Principais notícias", um bloco por editoria, faixa "Fique por dentro" e rodapé escuro com status das fontes.
+- Mantidos: busca (Ctrl K), favoritos, histórico, resumo por IA, tema claro/escuro, PWA e todo o motor de coleta.
+- Arquivos alterados: `docs/index.html`, `docs/assets/css/main.css`, `docs/assets/js/app.js`, `docs/assets/js/api.js`, `docs/sw.js`, cores em `config/categorias.json`.
+
+## Jogos de hoje (Brasileirão A/B, Copa do Brasil, Libertadores, Sul-Americana e Europa)
+Mostra horários, jogos em andamento e resultado final no painel do destaque e na página **Jogos** (`#jogos`).
+
+**Ativar (uma vez, ~5 minutos):**
+1. Crie a conta grátis em dashboard.api-football.com e copie a chave em *Account > My Access*. O plano grátis tem 100 chamadas por dia; o robô usa 1 por execução (~48 por dia).
+2. No GitHub: **Settings > Secrets and variables > Actions > New repository secret**, nome `API_FOOTBALL_KEY`, cole a chave.
+3. Aba **Actions > Atualizar notícias > Run workflow**. O arquivo `docs/data/jogos.json` é gerado.
+
+**Como funciona:** o robô faz uma única chamada com todos os jogos do dia e guarda só os campeonatos de `config/campeonatos.json` (para incluir ou tirar campeonatos, edite esse arquivo; o `id` é o da API-Football). Sem a chave, o robô ignora os jogos e o site mostra o painel de editorias, como antes. Se a API falhar, o arquivo anterior é mantido.
+
+**Limite:** o placar é atualizado junto com as notícias (~30 min), então é "jogos de hoje e resultado final", não placar ao vivo. Teste: `node test/jogos.test.mjs`.

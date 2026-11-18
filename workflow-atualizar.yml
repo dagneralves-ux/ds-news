@@ -27,6 +27,7 @@ jobs:
         run: node scripts/atualizar.mjs
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
 
       - name: Salvar mudanças
         run: |

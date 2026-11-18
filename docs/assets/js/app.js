@@ -34,6 +34,8 @@ const State = {
   home: null,               // resposta de /api/home
   list: { items: [], page: 1, hasMore: false, total: 0 },
   meta: { counts: {}, total: 0, todayCount: 0, lastUpdated: null },
+  jogos: null,              // conteúdo de data/jogos.json
+  jogosLeague: 'all',
   loading: false,
   error: null,
   reqId: 0,                 // descarta respostas atrasadas quando o usuário troca de tela
@@ -48,6 +50,7 @@ const State = {
 function currentView() {
   if (State.category === 'favorites') return 'favorites';
   if (State.category === 'history') return 'history';
+  if (State.category === 'jogos') return 'jogos';
   if (State.category === 'all' && State.filter === 'all') return 'home';
   return 'list';
 }
@@ -244,7 +247,8 @@ function render() {
   const view = currentView();
 
   content.setAttribute('aria-busy', String(State.loading));
-  $('#filtersBar').hidden = view === 'favorites' || view === 'history';
+  $('#toolbar').hidden = view !== 'list';
+  if (view !== 'home') heroStop();
 
   if (State.error && !(view === 'home' && State.home) && !(view === 'list' && State.list.items.length)) {
     content.innerHTML = emptyStateHtml(
@@ -278,86 +282,328 @@ function render() {
     return;
   }
 
+  if (view === 'jogos') return renderJogos(content);
   if (view === 'home') return renderHome(content);
   return renderList(content);
 }
 
-function featuredHtml(list) {
+// ── Página inicial (layout de portal) ────────────────────────
+/** Imagem da notícia ou, sem foto, um bloco colorido com o ícone da editoria. */
+function mediaBox(item, extra = '') {
+  const cat = categoryOf(item.category);
+  const image = safeImage(item.image);
+  const icon = escapeHtml(cat.icon || '📰');
+  return `<span class="media ${extra}${image ? '' : ' no-img'}" data-icon="${icon}" style="--c:${escapeHtml(cat.color)}">${
+    image
+      ? `<img class="item-img" src="${escapeHtml(image)}" alt="" loading="lazy" referrerpolicy="no-referrer">`
+      : `<span class="feat-media-mark">${icon}</span>`}</span>`;
+}
+
+function tagHtml(item, small = false) {
+  const cat = categoryOf(item.category);
+  return `<span class="tag${small ? ' tag-sm' : ''}" style="--c:${escapeHtml(cat.color)}">${escapeHtml(cat.label)}</span>`;
+}
+
+function linkAttrs(item) {
+  return `href="${escapeHtml(safeUrl(item.link) || '#')}" data-action="open-panel" data-id="${escapeHtml(item.id)}"`;
+}
+
+function latestHtml(list) {
   if (!list?.length) return '';
-  const [main, ...rest] = list;
-  const cat = categoryOf(main.category);
-  const image = safeImage(main.image);
-  const id = escapeHtml(main.id);
-  const isFav = Store.isFavorite(main.id);
-  const side = rest.map(n => {
-    const c = categoryOf(n.category);
-    return `
-      <button type="button" class="feat-row" data-action="open-panel" data-id="${escapeHtml(n.id)}" style="--c:${escapeHtml(c.color)}">
-        <span class="feat-row-cat"><span class="sec-dot" style="background:${escapeHtml(c.color)}"></span>${escapeHtml(c.label)}</span>
-        <span class="feat-row-title">${escapeHtml(n.title)}</span>
-        <span class="feat-row-meta">${escapeHtml(n.source)} · ${escapeHtml(formatRelativeDate(n.date))}${n.also?.length ? ` · ${n.also.length + 1} fontes` : ''}</span>
-      </button>`;
-  }).join('');
   return `
-    <section class="featured" aria-label="Notícia em destaque">
-      <article class="feat-main" id="card-${id}" style="--c:${escapeHtml(cat.color)}">
-        <div class="feat-media${image ? '' : ' no-img'}" data-icon="${escapeHtml(cat.icon || '')}">
-          ${image ? `<img class="item-img" src="${escapeHtml(image)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="feat-media-mark">${escapeHtml(cat.icon || '')}</span>`}
-          <span class="feat-tag">Em destaque</span>
-        </div>
-        <div class="feat-body">
-          <div class="item-meta">
-            <span class="item-cat">${escapeHtml(cat.label)}</span>
-            <span class="item-src">${escapeHtml(main.source)}</span>
-            <time class="item-date" datetime="${escapeHtml(main.date)}">${escapeHtml(formatRelativeDate(main.date))}</time>
-            ${badgeHtml(main.importance)}
-          </div>
-          <h2 class="feat-title"><a href="${escapeHtml(safeUrl(main.link) || '#')}" data-action="open-panel" data-id="${id}">${escapeHtml(main.title)}</a></h2>
-          ${main.summary ? `<p class="feat-summary">${escapeHtml(main.summary)}</p>` : ''}
-          ${alsoHtml(main)}
-          <div class="feat-actions">
-            <button type="button" class="btn-primary" data-action="open-panel" data-id="${id}">Ler resumo</button>
-            <button type="button" class="icon-btn ${isFav ? 'active' : ''}" id="fav-${id}" data-action="favorite" data-id="${id}" aria-pressed="${isFav}" aria-label="Favoritar" title="Favoritar">
+    <section class="latest" aria-label="Últimas notícias">
+      ${list.map(n => `
+        <a class="latest-item" ${linkAttrs(n)}>
+          ${mediaBox(n, 'latest-media')}
+          <span class="latest-text">
+            <strong>${escapeHtml(n.title)}</strong>
+            <small>${escapeHtml(categoryOf(n.category).label)} <i>•</i> ${escapeHtml(formatRelativeDate(n.date))}</small>
+          </span>
+        </a>`).join('')}
+    </section>`;
+}
+
+function heroHtml(featured, counts = {}, todayCounts = {}, jogos = null) {
+  if (!featured?.length) return '';
+  const slides = featured.map((n, i) => {
+    const id = escapeHtml(n.id);
+    const isFav = Store.isFavorite(n.id);
+    const sources = n.also?.length ? ` <i>•</i> ${n.also.length + 1} fontes` : '';
+    return `
+      <article class="hero-slide${i === 0 ? ' active' : ''}" id="card-${id}" aria-hidden="${i === 0 ? 'false' : 'true'}">
+        ${mediaBox(n, 'hero-media')}
+        <span class="hero-shade"></span>
+        <div class="hero-top">${tagHtml(n)}${badgeHtml(n.importance)}</div>
+        <div class="hero-body">
+          <div class="hero-eyebrow">${escapeHtml(n.source)} <i>•</i> ${escapeHtml(formatRelativeDate(n.date))}${sources}</div>
+          <h2 class="hero-title"><a ${linkAttrs(n)}>${escapeHtml(n.title)}</a></h2>
+          ${n.summary ? `<p class="hero-summary">${escapeHtml(n.summary)}</p>` : ''}
+          <div class="hero-actions">
+            <button type="button" class="btn-light" data-action="open-panel" data-id="${id}">Ler resumo
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </button>
+            <button type="button" class="icon-btn on-dark ${isFav ? 'active' : ''}" id="fav-${id}" data-action="favorite" data-id="${id}" aria-pressed="${isFav}" aria-label="Favoritar" title="Favoritar">
               <svg width="17" height="17" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
             </button>
           </div>
         </div>
-      </article>
-      <div class="feat-side">${side}</div>
+      </article>`;
+  }).join('');
+
+  const dots = featured.length > 1
+    ? `<div class="hero-dots" role="group" aria-label="Escolher destaque">${featured.map((_, i) =>
+        `<button type="button" class="hero-dot${i === 0 ? ' active' : ''}" data-action="hero-go" data-value="${i}" aria-label="Destaque ${i + 1}"></button>`).join('')}</div>`
+    : '';
+
+  const rows = Object.entries(CATEGORIES).filter(([k]) => k !== 'all').map(([key, c]) => {
+    const today = todayCounts[key] || 0;
+    return `
+      <button type="button" class="score-row" data-action="category" data-value="${escapeHtml(key)}" style="--c:${escapeHtml(c.color)}">
+        <span class="score-meta">${today ? `${today} ${today === 1 ? 'nova' : 'novas'} hoje` : 'Sem novidades hoje'}</span>
+        <span class="score-main">
+          <span class="score-ico" aria-hidden="true">${escapeHtml(c.icon || '•')}</span>
+          <span class="score-name">${escapeHtml(c.label)}</span>
+          <span class="score-num">${Number(counts[key] || 0)}</span>
+        </span>
+      </button>`;
+  }).join('');
+
+  return `
+    <section class="hero-grid" aria-label="Destaques">
+      <div class="hero" id="hero">${slides}${dots}</div>
+      ${jogos ? gamesPanelHtml(jogos) : `<aside class="hero-panel" aria-label="Painel do dia">
+        <div class="hero-panel-head"><h3>Painel do dia</h3><button type="button" data-action="category" data-value="all">Ver todas</button></div>
+        <div class="score-list">${rows}</div>
+      </aside>`}
     </section>`;
 }
 
-function stripHtml(title, color, count, items, category) {
-  const key = escapeHtml(category);
+function mosaicHtml(list, top) {
+  if (!list?.length && !top?.length) return '';
+  const tiles = (list || []).map(n => `
+    <a class="tile" ${linkAttrs(n)} style="--c:${escapeHtml(categoryOf(n.category).color)}">
+      ${mediaBox(n, 'tile-media')}
+      <span class="tile-shade"></span>
+      ${tagHtml(n, true)}
+      <span class="tile-body"><strong>${escapeHtml(n.title)}</strong><small>${escapeHtml(formatRelativeDate(n.date))}</small></span>
+    </a>`).join('');
+
+  const ranked = (top || []).map((n, i) => `
+    <li>
+      <a class="top-row" ${linkAttrs(n)}>
+        <span class="top-num" aria-hidden="true">${i + 1}</span>
+        <span class="top-text">${badgeHtml(n.importance) ? `<span class="top-badge">${badgeHtml(n.importance)}</span>` : ''}<strong>${escapeHtml(n.title)}</strong><small>${escapeHtml(formatRelativeDate(n.date))} <i>•</i> ${escapeHtml(n.source)}</small></span>
+        ${mediaBox(n, 'top-thumb')}
+      </a>
+    </li>`).join('');
+
   return `
-    <section class="news-section strip-section">
-      <div class="section-header">
-        <h3 class="section-title"><span class="sec-dot" style="background:${escapeHtml(color)}"></span>${escapeHtml(title)} <span class="section-count">${count}</span></h3>
-        <div class="strip-nav">
-          <button type="button" class="strip-btn" data-action="strip" data-value="-1" data-id="${key}" aria-label="Anteriores">‹</button>
-          <button type="button" class="strip-btn" data-action="strip" data-value="1" data-id="${key}" aria-label="Próximas">›</button>
-        </div>
-        <button type="button" class="section-more" data-action="category" data-value="${key}">Ver todas</button>
+    <div class="split">
+      ${tiles ? `
+      <section class="block" aria-label="Não perca">
+        <div class="block-head"><h3 class="block-title">Não perca</h3></div>
+        <div class="mosaic mosaic-${Math.min(list.length, 5)}">${tiles}</div>
+      </section>` : '<div></div>'}
+      ${ranked ? `
+      <aside class="block top-stories" aria-label="Principais notícias">
+        <div class="block-head"><h3 class="block-title">Principais notícias</h3>
+          <button type="button" class="section-more" data-action="category" data-value="all">Ver todas</button></div>
+        <ol>${ranked}</ol>
+      </aside>` : ''}
+    </div>`;
+}
+
+function categoryBlockHtml(cat, section) {
+  const [first, ...rest] = section.items;
+  const big = `
+    <a class="feature-big" ${linkAttrs(first)} style="--c:${escapeHtml(cat.color)}">
+      ${mediaBox(first, 'feature-media')}
+      <span class="tile-shade"></span>
+      ${badgeHtml(first.importance) ? `<span class="feature-badge">${badgeHtml(first.importance)}</span>` : ''}
+      <span class="tile-body">
+        <strong>${escapeHtml(first.title)}</strong>
+        <small>${escapeHtml(first.source)} <i>•</i> ${escapeHtml(formatRelativeDate(first.date))}</small>
+      </span>
+    </a>`;
+  const side = rest.map(n => `
+    <a class="feature-row" ${linkAttrs(n)}>
+      ${mediaBox(n, 'feature-thumb')}
+      <span class="feature-text"><strong>${escapeHtml(n.title)}</strong><small>${escapeHtml(n.source)} <i>•</i> ${escapeHtml(formatRelativeDate(n.date))}</small></span>
+    </a>`).join('');
+
+  return `
+    <section class="block cat-block${rest.length ? '' : ' solo'}" style="--c:${escapeHtml(cat.color)}">
+      <div class="block-head">
+        <h3 class="block-title">${escapeHtml(cat.label)} <span class="section-count">${Number(section.total)}</span></h3>
+        <button type="button" class="section-more" data-action="category" data-value="${escapeHtml(section.category)}">Ver todas</button>
       </div>
-      <div class="strip hide-cat" id="strip-${key}">${items.map(n => renderCard(n)).join('')}</div>
+      <div class="feature-grid">${big}${side ? `<div class="feature-side">${side}</div>` : ''}</div>
     </section>`;
+}
+
+// ── Jogos de hoje ────────────────────────────────────────────
+/** Jogos válidos para hoje (o arquivo pode ser de ontem se a coleta ainda não rodou). */
+function jogosDeHoje() {
+  const j = State.jogos;
+  if (!j?.jogos?.length) return null;
+  return j.data === new Date().toLocaleDateString('sv-SE') ? j : null;
+}
+
+function formatHora(iso) {
+  return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+const JOGO_OUTRO = { PST: 'Adiado', CANC: 'Cancelado', SUSP: 'Suspenso', ABD: 'Abandonado', AWD: 'Decidido', WO: 'W.O.' };
+
+function jogoEstado(g) {
+  if (g.status === 'ao_vivo') return { cls: 'live', txt: g.statusTxt === 'HT' ? 'Intervalo' : 'Em andamento' };
+  if (g.status === 'encerrado') return { cls: 'done', txt: g.statusTxt === 'AET' ? 'Encerrado (prorrog.)' : g.statusTxt === 'PEN' ? 'Encerrado (pênaltis)' : 'Encerrado' };
+  if (g.status === 'agendado') return { cls: 'next', txt: formatHora(g.inicio) };
+  return { cls: 'other', txt: JOGO_OUTRO[g.statusTxt] || 'Sem data' };
+}
+
+function teamLogo(t) {
+  const src = safeImage(t.logo);
+  return src ? `<img class="team-logo" src="${escapeHtml(src)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<span class="team-logo team-logo-empty" aria-hidden="true"></span>';
+}
+
+function gameHtml(g, { showLeague = true } = {}) {
+  const st = jogoEstado(g);
+  const hasScore = g.golsCasa !== null && g.golsFora !== null && g.status !== 'agendado';
+  const pen = g.penaltis ? ` <small>(${Number(g.penaltis[0])}–${Number(g.penaltis[1])})</small>` : '';
+  const center = hasScore
+    ? `<span class="game-score">${Number(g.golsCasa)}<i>×</i>${Number(g.golsFora)}${pen}</span>`
+    : `<span class="game-score game-vs">×</span>`;
+  return `
+    <div class="game game-${st.cls}">
+      <div class="game-meta">
+        ${showLeague ? `<span class="game-liga">${escapeHtml(g.liga)}</span>` : ''}
+        <span class="game-state">${g.status === 'ao_vivo' ? '<b class="live-dot" aria-hidden="true"></b>' : ''}${escapeHtml(st.txt)}</span>
+      </div>
+      <div class="game-main">
+        <span class="game-team game-home"><span class="game-name">${escapeHtml(g.casa.nome)}</span>${teamLogo(g.casa)}</span>
+        ${center}
+        <span class="game-team game-away">${teamLogo(g.fora)}<span class="game-name">${escapeHtml(g.fora.nome)}</span></span>
+      </div>
+    </div>`;
+}
+
+function gamesPanelHtml(j) {
+  const rank = g => (g.status === 'ao_vivo' ? 0 : g.status === 'agendado' ? 1 : g.status === 'encerrado' ? 2 : 3);
+  const top = [...j.jogos].sort((a, b) => rank(a) - rank(b) || (rank(a) === 2 ? new Date(b.inicio) - new Date(a.inicio) : new Date(a.inicio) - new Date(b.inicio))).slice(0, 5);
+  return `
+    <aside class="hero-panel games-panel" aria-label="Jogos de hoje">
+      <div class="hero-panel-head"><h3>Jogos de hoje</h3><button type="button" data-action="category" data-value="jogos">Ver todos (${j.jogos.length})</button></div>
+      <div class="score-list">${top.map(g => gameHtml(g)).join('')}</div>
+      <div class="games-foot">Atualizado às ${escapeHtml(formatHora(j.atualizadoEm))}</div>
+    </aside>`;
+}
+
+function renderJogos(content) {
+  const j = State.jogos;
+  if (!j) {
+    content.innerHTML = emptyStateHtml('⚽', 'Jogos ainda não configurados',
+      'Para mostrar os jogos de hoje, crie a chave grátis da API-Football e salve no GitHub como API_FOOTBALL_KEY (veja o LEIA-ME).');
+    return;
+  }
+  const hoje = jogosDeHoje();
+  if (!hoje) {
+    content.innerHTML = emptyStateHtml('⚽', 'Sem jogos dos seus campeonatos hoje',
+      j.data === new Date().toLocaleDateString('sv-SE')
+        ? 'Nenhum jogo de Brasileirão, Copa do Brasil, Libertadores ou Europa na data de hoje.'
+        : 'Os jogos de hoje aparecem na próxima atualização do robô (a cada ~30 minutos).');
+    return;
+  }
+  const ligas = [];
+  hoje.jogos.forEach(g => { if (!ligas.find(l => l.id === g.ligaId)) ligas.push({ id: g.ligaId, nome: g.liga }); });
+  if (State.jogosLeague !== 'all' && !ligas.find(l => String(l.id) === State.jogosLeague)) State.jogosLeague = 'all';
+  const chips = [{ id: 'all', nome: 'Todos', n: hoje.jogos.length }, ...ligas.map(l => ({ ...l, n: hoje.jogos.filter(g => g.ligaId === l.id).length }))]
+    .map(l => `<button type="button" class="filter-btn${String(l.id) === State.jogosLeague ? ' active' : ''}" data-action="jogos-liga" data-value="${escapeHtml(l.id)}">${escapeHtml(l.nome)} <small>${l.n}</small></button>`).join('');
+
+  const groups = ligas.filter(l => State.jogosLeague === 'all' || String(l.id) === State.jogosLeague).map(l => `
+    <section class="block games-block">
+      <div class="block-head"><h3 class="block-title">${escapeHtml(l.nome)}</h3></div>
+      <div class="games-grid">${hoje.jogos.filter(g => g.ligaId === l.id).map(g => gameHtml(g, { showLeague: false })).join('')}</div>
+    </section>`).join('');
+
+  const dia = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+  content.innerHTML = `
+    <div class="section-header">
+      <h3 class="section-title">Jogos de hoje <span class="section-count">${hoje.jogos.length}</span></h3>
+    </div>
+    <p class="games-note">${escapeHtml(dia)} · atualizado às ${escapeHtml(formatHora(hoje.atualizadoEm))}. Os placares são atualizados pelo robô a cada ~30 minutos, então podem ter pequeno atraso.</p>
+    <div class="filters-bar games-filters" aria-label="Filtrar por campeonato">${chips}</div>
+    ${groups}`;
+}
+
+async function loadJogos() {
+  State.jogos = await API.jogos();
+  const view = currentView();
+  if (view === 'home' || view === 'jogos') render();
+}
+
+function updateTopTrend(trends) {
+  const wrap = $('#topTrendWrap');
+  const btn = $('#topTrend');
+  if (!wrap || !btn) return;
+  const t = trends?.[0];
+  wrap.hidden = !t;
+  if (t) { btn.textContent = t.title; btn.dataset.q = t.title; }
+}
+
+// ── Carrossel do destaque ────────────────────────────────────
+let heroIndex = 0;
+let heroTimer = null;
+
+function heroGo(i) {
+  const slides = $$('.hero-slide');
+  if (!slides.length) return;
+  heroIndex = (i + slides.length) % slides.length;
+  slides.forEach((s, k) => {
+    s.classList.toggle('active', k === heroIndex);
+    s.setAttribute('aria-hidden', String(k !== heroIndex));
+  });
+  $$('.hero-dot').forEach((d, k) => {
+    d.classList.toggle('active', k === heroIndex);
+    if (k === heroIndex) d.setAttribute('aria-current', 'true'); else d.removeAttribute('aria-current');
+  });
+}
+
+function heroStop() { clearInterval(heroTimer); heroTimer = null; }
+
+function heroStart() {
+  heroStop();
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if ($$('.hero-slide').length < 2) return;
+  heroTimer = setInterval(() => {
+    const hero = $('#hero');
+    if (!hero || document.hidden || hero.matches(':hover, :focus-within')) return;
+    heroGo(heroIndex + 1);
+  }, 7000);
 }
 
 function renderHome(content) {
   const h = State.home;
   if (!h) { content.innerHTML = renderSkeletons(6); return; }
 
-  const parts = [];
+  updateTopTrend(h.trends);
+  const parts = [
+    latestHtml(h.latest),
+    heroHtml(h.featured, h.counts, h.todayCounts, jogosDeHoje()),
+  ];
   if (h.trends?.length) parts.push(renderTrends(h.trends));
-  parts.push(featuredHtml(h.featured));
+  parts.push(mosaicHtml(h.dontMiss, h.top));
   for (const s of h.sections || []) {
     const cat = CATEGORIES[s.category];
     if (!cat) continue;
-    parts.push(stripHtml(cat.label, cat.color, s.total, s.items, s.category));
+    parts.push(categoryBlockHtml(cat, s));
   }
 
-  content.innerHTML = parts.join('') || emptyStateHtml(
+  const html = parts.join('');
+  content.innerHTML = html.trim() ? html : emptyStateHtml(
     '🗞️', 'Ainda não há notícias', 'A coleta é atualizada automaticamente. Tente novamente em instantes.');
+  heroGo(Math.min(heroIndex, Math.max(0, $$('.hero-slide').length - 1)));
+  heroStart();
 }
 
 function renderList(content) {
@@ -392,6 +638,9 @@ function buildChrome() {
       <span class="nav-badge" id="badge-${escapeHtml(key)}">0</span>
     </button>`).join('');
 
+  $('#footerCats').innerHTML = '<h4>Editorias</h4>' + editorias.map(([key, c]) =>
+    `<a href="#${escapeHtml(key)}" data-action="category" data-value="${escapeHtml(key)}">${escapeHtml(c.label)}</a>`).join('');
+
   $('#categoryTabs').innerHTML =
     `<button type="button" class="tab active" role="tab" aria-selected="true" data-action="category" data-value="all">Todas</button>` +
     editorias.map(([key, c]) =>
@@ -401,7 +650,8 @@ function buildChrome() {
 
 function updateChrome() {
   $$('[data-action="category"]').forEach(el => {
-    const active = el.dataset.value === State.category;
+    const active = el.dataset.value === State.category
+      && !(el.dataset.value === 'all' && el.classList.contains('tab') && State.filter !== 'all');
     if (el.classList.contains('nav-item') || el.classList.contains('tab')) {
       el.classList.toggle('active', active);
       if (el.classList.contains('tab')) el.setAttribute('aria-selected', String(active));
@@ -416,6 +666,8 @@ function updateChrome() {
     else el.removeAttribute('aria-current');
   });
   $$('.filter-btn').forEach(el => el.classList.toggle('active', el.dataset.value === State.filter));
+  $$('[data-action="go-filter"]').forEach(el =>
+    el.classList.toggle('active', State.category === 'all' && State.filter === el.dataset.value));
 
   const { counts, total, todayCount, lastUpdated } = State.meta;
   $('#badge-all').textContent = total;
@@ -431,8 +683,10 @@ function updateChrome() {
   const today = $('#todayCount');
   if (today) today.textContent = todayCount;
   $('#lastUpdated').textContent = lastUpdated ? formatDateTime(lastUpdated) : '—';
+  const topUpdated = $('#lastUpdatedTop');
+  if (topUpdated) topUpdated.textContent = lastUpdated ? `Atualizado ${formatDateTime(lastUpdated)}` : 'Buscar atualizações';
 
-  const label = { all: null, favorites: 'Favoritos', history: 'Histórico' }[State.category] ?? categoryOf(State.category).label;
+  const label = { all: null, favorites: 'Favoritos', history: 'Histórico', jogos: 'Jogos de hoje' }[State.category] ?? categoryOf(State.category).label;
   document.title = label ? `${label} | TabNews` : 'TabNews | Futebol, política, IA, design e marketing';
 }
 
@@ -462,7 +716,7 @@ async function loadHome({ force = false, silent = false } = {}) {
     if (req !== State.reqId) return;
     State.home = data;
     (data.sections || []).forEach(s => remember(s.items));
-    remember(data.featured);
+    remember(data.featured); remember(data.latest); remember(data.dontMiss); remember(data.top);
     State.error = null;
     applyMeta(data);
     if (force) showToast('Notícias atualizadas', 'success');
@@ -536,16 +790,17 @@ function loadCurrent({ force = false } = {}) {
     if (!State.home || force) loadMeta();   // deep link ou atualização manual: refaz os contadores
     return loadList({ reset: true, force });
   }
-  State.reqId++;                           // favoritos/histórico são locais
+  State.reqId++;                           // favoritos, histórico e jogos são locais
   State.loading = false;
   State.error = null;
   if (!State.home) loadMeta();
+  if (view === 'jogos' && force) { loadJogos(); }
   render();
 }
 
 // ── Navegação ────────────────────────────────────────────────
-const HASH_TO_CAT = { todas: 'all', favoritos: 'favorites', historico: 'history' };
-const CAT_TO_HASH = { all: 'todas', favorites: 'favoritos', history: 'historico' };
+const HASH_TO_CAT = { todas: 'all', favoritos: 'favorites', historico: 'history', jogos: 'jogos' };
+const CAT_TO_HASH = { all: 'todas', favorites: 'favoritos', history: 'historico', jogos: 'jogos' };
 
 function readHash() {
   const h = decodeURIComponent(location.hash.slice(1));
@@ -556,7 +811,7 @@ function readHash() {
 function go(category, { filter } = {}) {
   State.category = category;
   if (filter !== undefined) State.filter = filter;
-  else if (category === 'favorites' || category === 'history') State.filter = 'all';
+  else if (category === 'favorites' || category === 'history' || category === 'jogos') State.filter = 'all';
 
   const hash = '#' + (CAT_TO_HASH[category] || category);
   if (location.hash !== hash) history.pushState(null, '', hash);
@@ -743,13 +998,13 @@ function toggleTheme() {
   root.dataset.theme = next;
   try { localStorage.setItem('ds_theme', next); } catch { /* ignore */ }
   document.querySelectorAll('meta[name="theme-color"]').forEach(meta => {
-    meta.setAttribute('content', next === 'dark' ? '#0d1422' : '#f5f7fb');
+    meta.setAttribute('content', next === 'dark' ? '#0a1122' : '#ffffff');
   });
-  const themeButton = $('#btnTheme');
-  if (themeButton) {
-    themeButton.setAttribute('aria-label', next === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro');
-    themeButton.setAttribute('title', next === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro');
-  }
+  const themeLabel = next === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro';
+  ['#btnTheme', '#btnThemeTop'].forEach(sel => {
+    const b = $(sel);
+    if (b) { b.setAttribute('aria-label', themeLabel); b.setAttribute('title', themeLabel); }
+  });
 }
 
 // ── Busca ────────────────────────────────────────────────────
@@ -850,11 +1105,9 @@ function handleClick(e) {
   switch (action) {
     case 'open-panel':    openPanel(id); break;
     case 'close-panel':   closePanel(); break;
-    case 'strip': {
-      const strip = document.getElementById(`strip-${id}`);
-      strip?.scrollBy({ left: Number(value) * Math.max(280, strip.clientWidth * 0.85), behavior: 'smooth' });
-      break;
-    }
+    case 'jogos-liga':    State.jogosLeague = String(value); render(); break;
+    case 'hero-go':       heroGo(Number(value)); heroStart(); break;
+    case 'go-filter':     closePanel(); go('all', { filter: State.category === 'all' && State.filter === value ? 'all' : value }); break;
     case 'category':      closePanel(); go(value); break;
     case 'today':         go('all', { filter: 'today' }); break;
     case 'filter':        setFilter(value); break;
@@ -917,6 +1170,7 @@ function autoRefresh() {
   lastAutoRefresh = Date.now();
   API.clearCache();
   loadHome({ silent: true });
+  loadJogos();
 }
 
 // ── Estado das fontes (data/status.json) ────────────────────
@@ -956,17 +1210,24 @@ async function init() {
   let savedView = 'list';
   try { savedView = localStorage.getItem('tn_view') || 'list'; } catch { /* ignore */ }
   setView(savedView);
-  $('#heroGreeting').innerHTML = `${getGreeting()}, <em>Dagner.</em>`;
   const small = window.matchMedia('(max-width: 600px)').matches;
-  $('#heroDate').textContent = new Date().toLocaleDateString('pt-BR', small
-    ? { weekday: 'short', day: '2-digit', month: 'short' }
-    : { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+  const topDate = $('#topDate');
+  if (topDate) {
+    const date = new Date().toLocaleDateString('pt-BR', small
+      ? { weekday: 'short', day: '2-digit', month: 'short' }
+      : { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+    topDate.textContent = small ? date : `${getGreeting()}, Dagner · ${date}`;
+  }
   $('#searchShortcut').textContent = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘K' : 'Ctrl K';
   const initialDark = document.documentElement.dataset.theme
     ? document.documentElement.dataset.theme === 'dark'
     : window.matchMedia('(prefers-color-scheme: dark)').matches;
-  $('#btnTheme').setAttribute('aria-label', initialDark ? 'Ativar tema claro' : 'Ativar tema escuro');
-  $('#btnTheme').setAttribute('title', initialDark ? 'Ativar tema claro' : 'Ativar tema escuro');
+  ['#btnTheme', '#btnThemeTop'].forEach(sel => {
+    const b = $(sel);
+    if (!b) return;
+    b.setAttribute('aria-label', initialDark ? 'Ativar tema claro' : 'Ativar tema escuro');
+    b.setAttribute('title', initialDark ? 'Ativar tema claro' : 'Ativar tema escuro');
+  });
 
   document.addEventListener('click', handleClick);
   document.addEventListener('keydown', handleKeydown);
@@ -978,9 +1239,10 @@ async function init() {
   // Imagem quebrada: mostra o ícone da editoria no lugar.
   document.addEventListener('error', e => {
     const img = e.target;
+    if (img.tagName === 'IMG' && img.classList.contains('team-logo')) { img.style.visibility = 'hidden'; return; }
     if (img.tagName === 'IMG' && img.classList.contains('item-img')) {
       img.closest('.item-thumb')?.remove();
-      const media = img.closest('.feat-media, .panel-media');
+      const media = img.closest('.media, .panel-media');
       if (media) {
         const icon = media.dataset.icon || '';
         img.remove();
@@ -994,6 +1256,7 @@ async function init() {
   updateChrome();
   loadCurrent();
   loadSources();
+  loadJogos();
 
   if (Sync.on) {
     const note = $('#syncNote');

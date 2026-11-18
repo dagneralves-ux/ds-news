@@ -3,7 +3,7 @@
  *
  *   node scripts/atualizar.mjs            → busca os feeds, resume com IA e grava docs/data/news.json
  *
- * Variável opcional (no GitHub: Settings > Secrets): GEMINI_API_KEY. Para testes: FONTES_FILE, DATA_DIR.
+ * Variáveis opcionais (no GitHub: Settings > Secrets): GEMINI_API_KEY (resumos) e API_FOOTBALL_KEY (jogos do dia). Para testes: FONTES_FILE, DATA_DIR.
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -12,12 +12,14 @@ import { fetchAllFeeds } from './lib/rss.js';
 import { summarizeItems } from './lib/ai.js';
 import { generateTrends } from './lib/trends.js';
 import { CATEGORIES } from './lib/categorias.js';
+import { buscarJogos } from './lib/jogos.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const FONTES_FILE = process.env.FONTES_FILE || join(ROOT, 'fontes.json');
 const DATA_DIR = process.env.DATA_DIR || join(ROOT, 'docs', 'data');
 const NEWS_FILE = join(DATA_DIR, 'news.json');
 const STATUS_FILE = join(DATA_DIR, 'status.json');
+const JOGOS_FILE = join(DATA_DIR, 'jogos.json');
 
 const HOUR = 3600000;
 const MAX_AGE_MS = 7 * 24 * HOUR;
@@ -72,6 +74,22 @@ async function main() {
     console.log(`[Gravado] ${merged.length} notícias (${newOnes.length} novas, ${summaries.size} resumos)`);
   } else {
     console.log('[Sem novidades] nada a gravar.');
+  }
+
+  // Jogos de hoje (só roda com a chave API_FOOTBALL_KEY; se falhar, mantém o arquivo anterior)
+  if (env.API_FOOTBALL_KEY) {
+    try {
+      const { data, jogos } = await buscarJogos({ key: env.API_FOOTBALL_KEY });
+      const prevJogos = readJson(JOGOS_FILE, null);
+      if (!prevJogos || JSON.stringify({ data: prevJogos.data, jogos: prevJogos.jogos }) !== JSON.stringify({ data, jogos })) {
+        writeFileSync(JOGOS_FILE, JSON.stringify({ atualizadoEm: new Date().toISOString(), data, jogos }));
+        console.log(`[Jogos] ${jogos.length} jogos em ${data}`);
+      } else {
+        console.log('[Jogos] sem mudanças.');
+      }
+    } catch (err) {
+      console.warn('[Jogos] aviso:', err.message);
+    }
   }
 
   // Saúde das fontes: só regrava se alguma fonte mudou de "funciona" para "falha" (ou vice-versa)

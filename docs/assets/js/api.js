@@ -47,6 +47,16 @@ const API = {
     } catch { return null; }
   },
 
+  /** Jogos do dia (opcional: data/jogos.json, gravado pelo robô quando há chave da API de futebol). */
+  async jogos() {
+    try {
+      const res = await fetch('data/jogos.json', { cache: 'no-cache' });
+      if (!res.ok) return null;
+      const json = await res.json();
+      return json && Array.isArray(json.jogos) ? json : null;
+    } catch { return null; }
+  },
+
   clearCache() { this._data = null; },
 
   async get(endpoint) {
@@ -123,14 +133,37 @@ const API = {
       perCat[n.category] = (perCat[n.category] || 0) + 1;
       return perCat[n.category] <= 2;
     }).slice(0, 4);
-    const featuredIds = new Set(featured.map(n => n.id));
+    const used = new Set(featured.map(n => n.id));
+    const cats = Object.keys(CATEGORIES).filter(k => k !== 'all');
 
-    const sections = Object.keys(CATEGORIES).filter(k => k !== 'all').map(category => ({
+    // Faixa "Últimas": as 4 mais novas, independentemente do resto da página.
+    const latest = items.slice(0, 4);
+
+    // "Não perca": uma notícia por editoria (prefere as que têm foto entre as 5 mais novas).
+    const dontMiss = [];
+    for (const category of cats) {
+      const mine = items.filter(n => n.category === category && !used.has(n.id));
+      const pick = mine.slice(0, 5).find(n => n.image) || mine[0];
+      if (pick) { dontMiss.push(pick); used.add(pick.id); }
+    }
+    dontMiss.sort((a, b) => (b.image ? 1 : 0) - (a.image ? 1 : 0) || new Date(b.date) - new Date(a.date));
+
+    // "Principais notícias": as 5 mais relevantes que ainda não apareceram.
+    const top = [...items].filter(n => !used.has(n.id)).sort((a, b) => score(b) - score(a)).slice(0, 5);
+    top.forEach(n => used.add(n.id));
+
+    // Um bloco por editoria com o que sobrou (1 grande + até 3 em lista).
+    const sections = cats.map(category => ({
       category,
       total: counts[category] || 0,
-      items: items.filter(n => n.category === category && !featuredIds.has(n.id)).slice(0, 10),
+      items: items.filter(n => n.category === category && !used.has(n.id)).slice(0, 4),
     })).filter(s => s.items.length);
-    return { featured, sections, trends: data.tendencias || [], total, todayCount, counts, lastUpdated: data.atualizadoEm };
+
+    const todayStart = this._startOfToday();
+    const todayCounts = {};
+    items.forEach(n => { if (new Date(n.date) >= todayStart) todayCounts[n.category] = (todayCounts[n.category] || 0) + 1; });
+
+    return { featured, latest, dontMiss, top, sections, trends: data.tendencias || [], total, todayCount, counts, todayCounts, lastUpdated: data.atualizadoEm };
   },
 };
 

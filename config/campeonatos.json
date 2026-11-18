@@ -1,0 +1,13 @@
+[
+  { "id": 71,  "label": "Brasileirão Série A", "curto": "Série A" },
+  { "id": 72,  "label": "Brasileirão Série B", "curto": "Série B" },
+  { "id": 73,  "label": "Copa do Brasil",      "curto": "Copa do Brasil" },
+  { "id": 13,  "label": "Libertadores",        "curto": "Libertadores" },
+  { "id": 11,  "label": "Sul-Americana",       "curto": "Sul-Americana" },
+  { "id": 2,   "label": "Champions League",    "curto": "Champions" },
+  { "id": 39,  "label": "Premier League",      "curto": "Premier League" },
+  { "id": 140, "label": "La Liga",             "curto": "La Liga" },
+  { "id": 135, "label": "Serie A (Itália)",    "curto": "Itália" },
+  { "id": 78,  "label": "Bundesliga",          "curto": "Bundesliga" },
+  { "id": 61,  "label": "Ligue 1",             "curto": "Ligue 1" }
+]

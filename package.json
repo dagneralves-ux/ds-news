@@ -7,7 +7,7 @@
   "scripts": {
     "atualizar": "node scripts/atualizar.mjs",
     "site": "node test/servidor.mjs",
-    "test": "node test/pipeline.test.mjs"
+    "test": "node test/pipeline.test.mjs && node test/jogos.test.mjs"
   },
   "engines": { "node": ">=20" }
 }
